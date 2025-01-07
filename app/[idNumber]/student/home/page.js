@@ -18,7 +18,7 @@ function StudentPage() {
 
   // Navigate to Subjects page
   const handleGoToSubjects = () => {
-    router.push(`/${idNumber}/subjects`);
+    router.push(`/${idNumber}/student/subjects`);
   };
 
   return (

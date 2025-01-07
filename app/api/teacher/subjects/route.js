@@ -22,7 +22,7 @@ export async function GET(request) {
     }
 
     const [rows] = await db.query(
-      'SELECT * FROM subjects WHERE idnumber = ?',
+      'SELECT * FROM subjects WHERE teacherid = ?',
       [user.idNumber]
     );
 

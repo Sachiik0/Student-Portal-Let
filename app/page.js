@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');

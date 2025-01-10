@@ -5,10 +5,10 @@ import { getConnection } from '@/lib/db';
 export async function DELETE(request) {
   try {
     // Parse the request body to get the subject code
-    const { subject_code } = await request.json();
+    const { subject_id } = await request.json();
 
     // Validate the subject code
-    if (!subject_code) {
+    if (!subject_id) {
       return NextResponse.json(
         { error: 'Subject code is required' },
         { status: 400 }
@@ -20,8 +20,8 @@ export async function DELETE(request) {
 
     // Execute the delete query
     const [result] = await connection.execute(
-      'DELETE FROM subjects WHERE subject_code = ?',
-      [subject_code]
+      'DELETE FROM subjects WHERE subject_id = ?',
+      [subject_id]
     );
 
     // Close the database connection

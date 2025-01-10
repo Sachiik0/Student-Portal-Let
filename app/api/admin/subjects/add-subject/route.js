@@ -4,10 +4,10 @@ export async function POST(req) {
   try {
     // Parse the request body
     const body = await req.json();
-    const { subject_code, subject_name, idnumber, department, section } = body;
+    const { subject_code, subject_name, teacherid, department, section } = body;
 
     // Validate all required fields
-    if (!subject_code || !subject_name || !idnumber || !department || !section) {
+    if (!subject_code || !subject_name || !teacherid || !department || !section) {
       return new Response(
         JSON.stringify({
           error: 'Validation Error',
@@ -15,7 +15,7 @@ export async function POST(req) {
           missingFields: {
             subject_code: !subject_code ? 'Missing' : 'Present',
             subject_name: !subject_name ? 'Missing' : 'Present',
-            idnumber: !idnumber ? 'Missing' : 'Present',
+            teacherid: !teacherid ? 'Missing' : 'Present',
             department: !department ? 'Missing' : 'Present',
             section: !section ? 'Missing' : 'Present',
           },
@@ -30,10 +30,10 @@ export async function POST(req) {
     // MySQL query to insert data
     const [rows] = await connection.execute(
       `
-      INSERT INTO subjects (subject_code, subject_name, idnumber, department, section)
+      INSERT INTO subjects (subject_code, subject_name, teacherid, department, section)
       VALUES (?, ?, ?, ?, ?)
       `,
-      [subject_code, subject_name, idnumber, department, section]
+      [subject_code, subject_name, teacherid, department, section]
     );
 
     // Close the database connection
@@ -46,7 +46,7 @@ export async function POST(req) {
         data: {
           subject_code,
           subject_name,
-          idnumber,
+          teacherid,
           department,
           section,
           insertId: rows.insertId || 'N/A',

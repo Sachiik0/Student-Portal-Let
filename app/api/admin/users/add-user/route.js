@@ -1,82 +1,62 @@
 import { NextResponse } from 'next/server';
-import { getConnection } from '@/lib/db';
+import { getConnection } from '@/lib/db'; // Ensure correct import path
 
+// API handler function to add a user
 export async function POST(request) {
+  let connection;
+
   try {
-    // Get subject_id and student_ids from the request body
-    const { subject_id, student_ids } = await request.json();
+    // Get user data from the request body
+    const { name, email, role, year, password } = await request.json();
 
-    console.log('Received subject_id:', subject_id);
-    console.log('Received student_ids:', student_ids);
-
-    // Validate input
-    if (!subject_id || !Array.isArray(student_ids) || student_ids.length === 0) {
-      return NextResponse.json(
-        { error: 'Subject ID and student IDs are required.' },
-        { status: 400 }
-      );
+    // Validate input data
+    if (!name || !email || !role || !year || !password) {
+      return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
     }
 
-    const connection = await getConnection();
-    console.log('Database connection established');
+    // Get a database connection
+    connection = await getConnection();
 
-    // Check if the subject exists in the subjects table
-    const [subject] = await connection.execute(
-      'SELECT * FROM subjects WHERE subject_id = ?',
-      [subject_id]  // Use subject_id for querying the subjects table
-    );
+    // Check if the email already exists in the database
+    const [existingUser] = await connection.query('SELECT * FROM users WHERE email = ?', [email]);
 
-    if (subject.length === 0) {
-      return NextResponse.json(
-        { error: 'Subject not found.' },
-        { status: 404 }
-      );
+    if (existingUser.length > 0) {
+      return NextResponse.json({ message: 'Email is already taken' }, { status: 409 });
     }
 
-    // Validate if students exist and check if they are already enrolled in the subject
-    const placeholders = student_ids.map(() => '?').join(',');
-    const [validStudents] = await connection.execute(
-      `SELECT idnumber FROM users WHERE idnumber IN (${placeholders})`,
-      student_ids
-    );
-    const validStudentIds = validStudents.map((row) => row.idnumber);
-
-    const [alreadyEnrolled] = await connection.execute(
-      `SELECT idnumber FROM grades WHERE subjectid = ? AND idnumber IN (${placeholders})`,
-      [subject_id, ...student_ids]
-    );
-    const enrolledStudentIds = alreadyEnrolled.map((row) => row.idnumber);
-
-    const newStudentIds = validStudentIds.filter(
-      (id) => !enrolledStudentIds.includes(id)
+    // Insert new user into the database
+    const [result] = await connection.query(
+      'INSERT INTO users (name, email, role, year, password) VALUES (?, ?, ?, ?, ?)',
+      [name, email, role, year, password] // Insert the plain password (not hashed)
     );
 
-    if (newStudentIds.length === 0) {
-      return NextResponse.json(
-        { error: 'All students are already enrolled in this subject.' },
-        { status: 400 }
-      );
+    // Check if the insertion was successful
+    if (result.affectedRows === 0) {
+      return NextResponse.json({ message: 'Failed to add user to the database' }, { status: 500 });
     }
 
-    // Insert records for new students into the grades table
-    for (let idnumber of newStudentIds) {
-      await connection.execute(
-        'INSERT INTO grades (subjectid, idnumber) VALUES (?, ?)',
-        [subject_id, idnumber]
-      );
-    }
-
-    await connection.end();
-
+    // Return a success message
     return NextResponse.json(
-      { message: 'Students assigned successfully!', enrolledStudentIds: newStudentIds },
-      { status: 200 }
+      { message: 'User added successfully', userId: result.insertId }, // Assuming your table has an auto-incremented primary key
+      { status: 201 }
     );
+
   } catch (error) {
-    console.error('Detailed error:', error);
-    return NextResponse.json(
-      { error: 'An error occurred: ' + error.message },
-      { status: 500 }
-    );
+    console.error('Error adding user:', error);
+
+    // Check the error type for specific errors
+    if (error.code === 'ER_DUP_ENTRY') {
+      return NextResponse.json({ message: 'Duplicate entry, email already exists.' }, { status: 409 });
+    } else if (error.code === 'ER_BAD_FIELD_ERROR') {
+      return NextResponse.json({ message: 'Database error: Invalid field in request.' }, { status: 400 });
+    }
+
+    // General fallback error message
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  } finally {
+    // Close the connection to the database
+    if (connection) {
+      connection.end();
+    }
   }
 }

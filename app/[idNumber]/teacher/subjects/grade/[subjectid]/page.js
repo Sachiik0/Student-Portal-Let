@@ -1,32 +1,46 @@
-'use client'; // Add this line at the top to mark the file as a client component
-
+'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function GradeForm({ subjectId }) {
-  const [grades, setGrades] = useState([]);
+  const [grades, setGrades] = useState([]); // State to store student data
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
 
+  // Fetch student grades on component mount or when subjectId changes
   useEffect(() => {
     const fetchGrades = async () => {
       try {
-        const res = await fetch(`/api/teacher/subjects/${subjectId}/grades`);
+        const res = await fetch(`/api/teacher/subjects/grade/get-student`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ subjectid: subjectId }), // Pass the subjectId
+        });
+
         const data = await res.json();
+        console.log('API Response:', data); // Log API response for debugging
+
         if (res.ok) {
-          setGrades(data.grades);
+          setGrades(data.students); // Assuming the response contains a 'students' array
         } else {
+          console.error('Error fetching grades:', data.error);
           setError(data.error || 'Failed to fetch grades');
         }
       } catch (err) {
+        console.error('Error:', err); // Log the exact error
         setError('Error fetching grades');
       }
     };
 
-    fetchGrades();
+    if (subjectId) {
+      fetchGrades();
+    }
   }, [subjectId]);
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -35,7 +49,9 @@ export default function GradeForm({ subjectId }) {
     try {
       const formData = new FormData(e.target);
 
+      // Map over each grade and prepare the submission data
       const gradeData = grades.map((grade) => ({
+        subjectid: subjectId, // Include subjectid here
         idnumber: grade.idNumber,
         ww1_criteria1_score: formData.get(`ww1_criteria1_score-${grade.idNumber}`),
         ww1_criteria2_score: formData.get(`ww1_criteria2_score-${grade.idNumber}`),
@@ -50,7 +66,8 @@ export default function GradeForm({ subjectId }) {
         ww1_total_highest: formData.get(`ww1_total_highest-${grade.idNumber}`),
       }));
 
-      const res = await fetch(`/api/teacher/subjects/${subjectId}/grade-subject`, {
+      // Send grade data to the server
+      const res = await fetch(`/api/teacher/subjects/${subjectId}/grade-student`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,8 +89,13 @@ export default function GradeForm({ subjectId }) {
     }
   };
 
+  // Handle return home action
+  const handleReturnHome = () => {
+    router.push('/'); // Navigate to the home page or another desired page
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-full mx-auto p-6">
       <h1 className="text-3xl font-bold text-center mb-6">Submit Grades for Subject {subjectId}</h1>
 
       {error && (
@@ -82,83 +104,85 @@ export default function GradeForm({ subjectId }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {grades.map((grade) => (
-          <div key={grade.idNumber} className="bg-gray-100 p-4 rounded-lg shadow-md">
-            <h3 className="text-xl font-semibold">{grade.name} (ID: {grade.idNumber})</h3>
+      {/* Grade submission form */}
+      <form onSubmit={handleSubmit} className="overflow-x-auto w-full">
+        <div className="overflow-x-auto max-w-full">
+          <table className="table-auto w-full border-collapse border border-gray-300">
+            {/* Criteria Row */}
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border border-gray-300 p-2">Name</th>
+                {[1, 2, 3, 4, 5].map((criteria) => (
+                  <th key={criteria} className="border border-gray-300 p-2">
+                    Criteria {criteria}
+                  </th>
+                ))}
+              </tr>
+              
+              {/* Highest Scores Row */}
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 p-2">Highest</th>
+                {[1, 2, 3, 4, 5].map((criteria) => (
+                  <th key={`highest-${criteria}`} className="border border-gray-300 p-2">
+                    <input
+                      type="number"
+                      name={`ww1_criteria${criteria}_highest`}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="Highest"
+                    />
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-            {/* Input Fields for Scores */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label htmlFor={`ww1_criteria1_score-${grade.idNumber}`} className="block text-sm font-medium text-gray-700">Criteria 1 Score</label>
-                <input
-                  type="number"
-                  id={`ww1_criteria1_score-${grade.idNumber}`}
-                  name={`ww1_criteria1_score-${grade.idNumber}`}
-                  className="mt-2 block w-full p-2 border border-gray-300 rounded-md"
-                  required
-                  placeholder="Enter score"
-                />
-              </div>
+            {/* Student Data Rows */}
+            <tbody>
+              {grades.length > 0 ? (
+                grades.map((grade) => (
+                  <tr key={grade.idNumber} className="text-center">
+                    <td className="border border-gray-300 p-2">{grade.name}</td>
+                    {[1, 2, 3, 4, 5].map((criteria) => (
+                      <td key={`score-${criteria}-${grade.idNumber}`} className="border border-gray-300 p-2">
+                        <input
+                          type="number"
+                          name={`ww1_criteria${criteria}_score-${grade.idNumber}`}
+                          className="w-full p-2 border border-gray-300 rounded-md"
+                          placeholder="Enter score"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="text-center p-4">No students enrolled</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-              <div>
-                <label htmlFor={`ww1_criteria1_highest-${grade.idNumber}`} className="block text-sm font-medium text-gray-700">Criteria 1 Highest</label>
-                <input
-                  type="number"
-                  id={`ww1_criteria1_highest-${grade.idNumber}`}
-                  name={`ww1_criteria1_highest-${grade.idNumber}`}
-                  className="mt-2 block w-full p-2 border border-gray-300 rounded-md"
-                  required
-                  placeholder="Enter highest score"
-                />
-              </div>
-            </div>
-
-            {/* Add the other criteria fields here (Criteria 2-5) */}
-            {['2', '3', '4', '5'].map((criteriaNum) => (
-              <div key={criteriaNum} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label htmlFor={`ww1_criteria${criteriaNum}_score-${grade.idNumber}`} className="block text-sm font-medium text-gray-700">
-                    Criteria {criteriaNum} Score
-                  </label>
-                  <input
-                    type="number"
-                    id={`ww1_criteria${criteriaNum}_score-${grade.idNumber}`}
-                    name={`ww1_criteria${criteriaNum}_score-${grade.idNumber}`}
-                    className="mt-2 block w-full p-2 border border-gray-300 rounded-md"
-                    required
-                    placeholder="Enter score"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor={`ww1_criteria${criteriaNum}_highest-${grade.idNumber}`} className="block text-sm font-medium text-gray-700">
-                    Criteria {criteriaNum} Highest
-                  </label>
-                  <input
-                    type="number"
-                    id={`ww1_criteria${criteriaNum}_highest-${grade.idNumber}`}
-                    name={`ww1_criteria${criteriaNum}_highest-${grade.idNumber}`}
-                    className="mt-2 block w-full p-2 border border-gray-300 rounded-md"
-                    required
-                    placeholder="Enter highest score"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
-
-        <div className="text-center">
+        {/* Submit Button */}
+        <div className="text-center mt-6">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-4 py-2 px-6 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
+            className="py-2 px-6 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Grades'}
           </button>
         </div>
       </form>
+
+      {/* Return Home Button */}
+      <div className="text-center mt-4">
+        <button
+          onClick={handleReturnHome}
+          className="py-2 px-6 bg-gray-500 text-white font-bold rounded-lg hover:bg-gray-600"
+        >
+          Return Home
+        </button>
+      </div>
     </div>
   );
 }

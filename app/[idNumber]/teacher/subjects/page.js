@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import withAuth from '@/components/withAuth';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -10,9 +8,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 function TeacherSubjectsPage() {
   const [subjects, setSubjects] = useState([]);
   const [error, setError] = useState('');
-  const router = useRouter();
+  const [isUploadCardOpen, setIsUploadCardOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [file, setFile] = useState(null);
 
-  // Fetch subjects for the logged-in teacher
   const fetchSubjects = async () => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
@@ -33,11 +32,63 @@ function TeacherSubjectsPage() {
       }
 
       const data = await res.json();
-      console.log('Fetched subjects:', data.subjects);
       setSubjects(data.subjects);
     } catch (err) {
-      console.error(err);
       setError(err.message || 'An error occurred while fetching subjects.');
+    }
+  };
+
+  const handleGradeSubject = (subject) => {
+    setSelectedSubject(subject);
+    setIsUploadCardOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsUploadCardOpen(false);
+    setFile(null);
+  };
+
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+  };
+
+  const handleSubmit = async () => {
+    if (!file) {
+      setError('Please select a file to upload.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('subject_id', selectedSubject.subject_id);
+    formData.append('department', selectedSubject.department);
+
+    let apiUrl;
+    if (selectedSubject.department === 'COLLEGE') {
+      apiUrl = '/api/teacher/upload/college';
+    } else if (selectedSubject.department === 'SENIOR HIGH SCHOOL' || selectedSubject.department === 'EJHS') {
+      apiUrl = '/api/teacher/upload/ejhs-shs';
+    } else {
+      setError('Unsupported department.');
+      return;
+    }
+
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to upload the file. Please try again.');
+      }
+
+      alert('File uploaded successfully!');
+      handleModalClose();
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError(`Upload error: ${err.message || 'An unexpected error occurred.'}`);
     }
   };
 
@@ -45,28 +96,11 @@ function TeacherSubjectsPage() {
     fetchSubjects();
   }, []);
 
-  // Logout function
-  const handleLogout = () => {
-    localStorage.removeItem('user'); // Clear session
-    router.push(process.env.NEXT_PUBLIC_BASE_URL || '/'); // Redirect to home
-  };
-
-  // Navigate to grading page and pass the subjectId in the URL
-  const handleGradeSubject = (subjectId) => {
-    const user = JSON.parse(localStorage.getItem('user')); // Retrieve user info
-    const idNumber = user ? user.idNumber : ''; // Get idNumber from user object
-    if (subjectId && idNumber) {
-      router.push(`/${idNumber}/teacher/subjects/grade/${subjectId}`); // Correct URL structure with idNumber
-    } else {
-      console.error("Subject ID or ID Number is undefined");
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Teacher Subjects</h1>
-        <Button onClick={handleLogout} variant="outline">
+        <Button onClick={() => { /* logout logic */ }} variant="outline">
           Logout
         </Button>
       </div>
@@ -86,15 +120,11 @@ function TeacherSubjectsPage() {
               <CardDescription>{subject.subject_name}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p>
-                <strong>Section:</strong> {subject.section}
-              </p>
-              <p>
-                <strong>Department:</strong> {subject.department}
-              </p>
+              <p><strong>Section:</strong> {subject.section}</p>
+              <p><strong>Department:</strong> {subject.department}</p>
             </CardContent>
             <CardFooter>
-              <Button onClick={() => handleGradeSubject(subject.subject_id)} variant="primary">
+              <Button onClick={() => handleGradeSubject(subject)} variant="primary">
                 Grade
               </Button>
             </CardFooter>
@@ -102,11 +132,21 @@ function TeacherSubjectsPage() {
         ))}
       </div>
 
-      {subjects.length === 0 && !error && (
-        <p className="text-center text-gray-500 mt-6">No subjects found.</p>
+      { isUploadCardOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Upload Grades for {selectedSubject.subject_name}</h2>
+            <input type="file" onChange={handleFileChange} accept=".xlsx, .xls" className="mb-4" />
+            <div className="flex justify-end">
+              <Button onClick={handleModalClose} variant="outline" className="mr-2">Cancel</Button>
+              <Button onClick={handleSubmit} variant="primary">Upload</Button>
+            </div>
+            {error && <p className="text-red-500 mt-2">{error}</p>}
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-export default withAuth(TeacherSubjectsPage);
+export default TeacherSubjectsPage;

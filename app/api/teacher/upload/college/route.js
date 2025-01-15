@@ -2,7 +2,6 @@ import { read } from 'xlsx';
 import { NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
 
-// Function to convert column number to Excel-style column letter
 function getColumnLetter(col) {
   let letter = '';
   while (col > 0) {
@@ -20,6 +19,7 @@ export async function POST(req) {
 
     const formData = await req.formData();
     const file = formData.get('file');
+    const subjectId = formData.get('subject_id');
 
     if (!file) {
       console.error('No file uploaded');
@@ -27,52 +27,49 @@ export async function POST(req) {
     }
 
     if (!file.name.endsWith('.xlsx')) {
-      console.error('Invalid file format');
+      console.error('Invalid file format:', file.name);
       return NextResponse.json({ error: 'Only .xlsx files are allowed' }, { status: 400 });
     }
 
     const buffer = await file.arrayBuffer();
-    const workbook = read(Buffer.from(buffer)); // Ensure `read` is used properly
+    const workbook = read(Buffer.from(buffer));
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 
     console.log('Extracting data from sheet:', sheetName);
 
     const rowData = [];
-    const columnsToIgnore = [8, 14, 20, 26, 32, 38, 44, 50, 56, 62, 68, 74, 80, 86, 92, 98]; // Adjust this array as needed
+    const columnsToIgnore = [3, 9, 15, 21, 27, 33, 39, 45, 51, 57, 63, 69, 75, 81, 87, 93, 99];
 
-    for (let col = 2; col <= 98; col++) { // Loop through columns 2 to 74
-      if (!columnsToIgnore.includes(col)) { // Check if the column should be ignored
-        const colLetter = getColumnLetter(col); // Use the correct column letter calculation
+    for (let col = 2; col <= 99; col++) {
+      if (!columnsToIgnore.includes(col)) {
+        const colLetter = getColumnLetter(col);
         const cellAddress = `${colLetter}17`;
-        const cellValue = sheet[cellAddress]?.v || null; // Set to null if the cell is empty
-        console.log(`Cell ${cellAddress}:`, cellValue); // Log the cell address and value
+        const cellValue = sheet[cellAddress]?.v || null;
+        console.log(`Cell ${cellAddress}:`, cellValue);
         rowData.push(cellValue);
       }
     }
 
-    const extractedName = rowData.shift(); // Extract name from rowData
-
-    // Transform rowData: replace empty with NULL, keep 0 as-is
+    const extractedName = rowData.shift();
     const transformedData = rowData.map(value => (value === null ? null : value));
 
-    const queryData = [extractedName, ...transformedData]; // Ensure only necessary values are included
+    const queryData = [subjectId, extractedName, ...transformedData];
 
-    console.log('Query Data:', queryData); // Log the contents of queryData
-    console.log('Query Data Length:', queryData.length); // Log the length of queryData
-
+    console.log('Query Data:', queryData);
     console.log('Connecting to database');
 
     connection = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
       password: '',
-      database: 'test',
+      database: 'Letran',
     });
 
     const query = `
       INSERT INTO college_grades (
-        name, 
+        subject_id,
+        idnumber,
         ORT1_criteria1_score, ORT1_criteria2_score, ORT1_criteria3_score, ORT1_criteria4_score, ORT1_criteria5_score,
         ORT2_criteria1_score, ORT2_criteria2_score, ORT2_criteria3_score, ORT2_criteria4_score, ORT2_criteria5_score,
         ORT3_criteria1_score, ORT3_criteria2_score, ORT3_criteria3_score, ORT3_criteria4_score, ORT3_criteria5_score,
@@ -97,7 +94,7 @@ export async function POST(req) {
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       )
     `;
 

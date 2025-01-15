@@ -2,7 +2,6 @@ import { read } from 'xlsx';
 import { NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
 
-// Function to convert column number to Excel-style column letter
 function getColumnLetter(col) {
   let letter = '';
   while (col > 0) {
@@ -20,6 +19,7 @@ export async function POST(req) {
 
     const formData = await req.formData();
     const file = formData.get('file');
+    const subjectId = formData.get('subject_id');
 
     if (!file) {
       console.error('No file uploaded');
@@ -27,39 +27,42 @@ export async function POST(req) {
     }
 
     if (!file.name.endsWith('.xlsx')) {
-      console.error('Invalid file format');
+      console.error('Invalid file format:', file.name);
       return NextResponse.json({ error: 'Only .xlsx files are allowed' }, { status: 400 });
     }
 
     const buffer = await file.arrayBuffer();
-    const workbook = read(Buffer.from(buffer)); // Ensure `read` is used properly
+    const workbook = read(Buffer.from(buffer));
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 
     console.log('Extracting data from sheet:', sheetName);
 
     const rowData = [];
-    const columnsToIgnore = [8, 14, 20, 26, 32, 38, 44, 50, 56, 62, 68, 74]; // Corresponding to H, N, T, Z, AF, AL, AR, AX, BD, BJ, BP, BV
+    const columnsToIgnore = [3, 9, 15, 21, 27, 33, 39, 45, 51, 57, 63, 69, 75]; // Columns to ignore
 
-    for (let col = 2; col <= 74; col++) { // Loop through columns 2 to 74
-      if (!columnsToIgnore.includes(col)) { // Check if the column should be ignored
-        const colLetter = getColumnLetter(col); // Use the correct column letter calculation
+    for (let col = 2; col <= 74; col++) {
+      if (!columnsToIgnore.includes(col)) {
+        const colLetter = getColumnLetter(col);
         const cellAddress = `${colLetter}17`;
-        const cellValue = sheet[cellAddress]?.v || null; // Set to null if the cell is empty
-        console.log(`Cell ${cellAddress}:`, cellValue); // Log the cell address and value
+        const cellValue = sheet[cellAddress]?.v || null;
+        console.log(`Cell ${cellAddress}:`, cellValue);
         rowData.push(cellValue);
       }
     }
 
-    const extractedName = rowData.shift(); // Extract name from rowData
-
-    // Transform rowData: replace empty with NULL, keep 0 as-is
+    const extractedName = rowData.shift(); // The first value will be treated as the 'idnumber'
     const transformedData = rowData.map(value => (value === null ? null : value));
 
-    const queryData = [extractedName, ...transformedData]; // Ensure only necessary values are included
+    const queryData = [subjectId, extractedName, ...transformedData];
 
-    console.log('Query Data:', queryData); // Log the contents of queryData
-    console.log('Query Data Length:', queryData.length); // Log the length of queryData
+    // Check if the query data has exactly 62 values
+    console.log('Query Data:', queryData);
+    console.log('Number of values to insert:', queryData.length);
+    if (queryData.length !== 62) {
+      console.error('Error: Mismatch in the number of query data values');
+      return NextResponse.json({ error: 'Mismatch in the number of query data values' }, { status: 400 });
+    }
 
     console.log('Connecting to database');
 
@@ -67,31 +70,41 @@ export async function POST(req) {
       host: 'localhost',
       user: 'root',
       password: '',
-      database: 'test',
+      database: 'Letran',
     });
 
     const query = `
-      INSERT INTO EJHS_SHS_grades (
-        name, 
-        WW1_criteria1, WW1_criteria2, WW1_criteria3, WW1_criteria4, WW1_criteria5,
-        WW2_criteria1, WW2_criteria2, WW2_criteria3, WW2_criteria4, WW2_criteria5,
-        WW3_criteria1, WW3_criteria2, WW3_criteria3, WW3_criteria4, WW3_criteria5,
-        WW4_criteria1, WW4_criteria2, WW4_criteria3, WW4_criteria4, WW4_criteria5,
-        WW5_criteria1, WW5_criteria2, WW5_criteria3, WW5_criteria4, WW5_criteria5,
-        WW6_criteria1, WW6_criteria2, WW6_criteria3, WW6_criteria4, WW6_criteria5,
-        WW7_criteria1, WW7_criteria2, WW7_criteria3, WW7_criteria4, WW7_criteria5,
-        PT1_criteria1, PT1_criteria2, PT1_criteria3, PT1_criteria4, PT1_criteria5,
-        PT2_criteria1, PT2_criteria2, PT2_criteria3, PT2_criteria4, PT2_criteria5,
-        PT3_criteria1, PT3_criteria2, PT3_criteria3, PT3_criteria4, PT3_criteria5,
-        QA1_criteria1, QA1_criteria2, QA1_criteria3, QA1_criteria4, QA1_criteria5,
-        QA2_criteria1, QA2_criteria2, QA2_criteria3, QA2_criteria4, QA2_criteria5
-      ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      INSERT INTO ejhs_shs_grades 
+      (
+        subject_id, idnumber, 
+        WW1_criteria1_score, WW1_criteria2_score, WW1_criteria3_score, WW1_criteria4_score, WW1_criteria5_score, 
+        WW2_criteria1_score, WW2_criteria2_score, WW2_criteria3_score, WW2_criteria4_score, WW2_criteria5_score, 
+        WW3_criteria1_score, WW3_criteria2_score, WW3_criteria3_score, WW3_criteria4_score, WW3_criteria5_score, 
+        WW4_criteria1_score, WW4_criteria2_score, WW4_criteria3_score, WW4_criteria4_score, WW4_criteria5_score, 
+        WW5_criteria1_score, WW5_criteria2_score, WW5_criteria3_score, WW5_criteria4_score, WW5_criteria5_score, 
+        WW6_criteria1_score, WW6_criteria2_score, WW6_criteria3_score, WW6_criteria4_score, WW6_criteria5_score, 
+        WW7_criteria1_score, WW7_criteria2_score, WW7_criteria3_score, WW7_criteria4_score, WW7_criteria5_score, 
+        PT1_criteria1_score, PT1_criteria2_score, PT1_criteria3_score, PT1_criteria4_score, PT1_criteria5_score, 
+        PT2_criteria1_score, PT2_criteria2_score, PT2_criteria3_score, PT2_criteria4_score, PT2_criteria5_score, 
+        PT3_criteria1_score, PT3_criteria2_score, PT3_criteria3_score, PT3_criteria4_score, PT3_criteria5_score, 
+        QA1_criteria1_score, QA1_criteria2_score, QA1_criteria3_score, QA1_criteria4_score, QA1_criteria5_score, 
+        QA2_criteria1_score, QA2_criteria2_score, QA2_criteria3_score, QA2_criteria4_score, QA2_criteria5_score
+      ) 
+      VALUES 
+      (
+        ?, ?, 
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?
       )
     `;
 

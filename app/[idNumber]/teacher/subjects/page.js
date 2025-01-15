@@ -57,12 +57,16 @@ function TeacherSubjectsPage() {
       setError('Please select a file to upload.');
       return;
     }
-
+    if (!selectedSubject || !selectedSubject.subject_id || !selectedSubject.department) {
+      setError('Missing subject details.');
+      return;
+    }
+  
     const formData = new FormData();
     formData.append('file', file);
     formData.append('subject_id', selectedSubject.subject_id);
     formData.append('department', selectedSubject.department);
-
+  
     let apiUrl;
     if (selectedSubject.department === 'COLLEGE') {
       apiUrl = '/api/teacher/upload/college';
@@ -72,18 +76,18 @@ function TeacherSubjectsPage() {
       setError('Unsupported department.');
       return;
     }
-
+  
     try {
       const res = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
       });
-
+  
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Failed to upload the file. Please try again.');
       }
-
+  
       alert('File uploaded successfully!');
       handleModalClose();
     } catch (err) {
@@ -91,6 +95,7 @@ function TeacherSubjectsPage() {
       setError(`Upload error: ${err.message || 'An unexpected error occurred.'}`);
     }
   };
+  
 
   useEffect(() => {
     fetchSubjects();

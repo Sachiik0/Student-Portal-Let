@@ -19,7 +19,7 @@ export async function GET(request, { params }) {
 
     // Fetch grades for the specific student and subject
     const [rows] = await connection.execute(
-      'SELECT * FROM grades WHERE idnumber = ? AND subjectid = ?',
+      'SELECT * FROM enrolled WHERE idnumber = ? AND subjectid = ?',
       [idNumber, subjectid]
     );
 

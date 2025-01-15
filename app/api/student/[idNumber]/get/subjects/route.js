@@ -21,9 +21,9 @@ export async function GET(request, { params }) {
     const [rows] = await connection.execute(
       `SELECT subjects.*, users.name AS teacher_name
        FROM subjects
-       JOIN grades ON grades.subjectid = subjects.subject_id
+       JOIN enrolled ON enrolled.subjectid = subjects.subject_id
        LEFT JOIN users ON users.idnumber = subjects.teacherid  -- Assuming teacherid is in subjects table
-       WHERE grades.idnumber = ?`,
+       WHERE enrolled.idnumber = ?`,
       [idNumber]
     );
 

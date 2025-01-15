@@ -33,7 +33,7 @@ export async function POST(request) {
       );
     }
 
-    // Validate if students exist and check if they are already enrolled in the subject
+    // Validate if students exist in the users table
     const placeholders = student_ids.map(() => '?').join(',');
     const [validStudents] = await connection.execute(
       `SELECT idnumber FROM users WHERE idnumber IN (${placeholders})`,
@@ -41,8 +41,9 @@ export async function POST(request) {
     );
     const validStudentIds = validStudents.map((row) => row.idnumber);
 
+    // Check if students are already enrolled in the subject in the enrolled table
     const [alreadyEnrolled] = await connection.execute(
-      `SELECT idnumber FROM grades WHERE subjectid = ? AND idnumber IN (${placeholders})`,
+      `SELECT idnumber FROM enrolled WHERE subjectid = ? AND idnumber IN (${placeholders})`,
       [subject_id, ...student_ids]
     );
     const enrolledStudentIds = alreadyEnrolled.map((row) => row.idnumber);
@@ -58,11 +59,11 @@ export async function POST(request) {
       );
     }
 
-    // Insert records for new students into the grades table
+    // Insert records for new students into the enrolled table
     for (let idnumber of newStudentIds) {
       await connection.execute(
-        'INSERT INTO grades (subjectid, idnumber) VALUES (?, ?)',
-        [subject_id, idnumber]
+        'INSERT INTO enrolled (subjectid, idnumber, status) VALUES (?, ?, ?)',
+        [subject_id, idnumber, 'ENROLLED']
       );
     }
 

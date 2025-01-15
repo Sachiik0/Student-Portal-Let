@@ -22,7 +22,7 @@ export async function GET(request) {
     const [students] = await connection.query(
       `
       SELECT u.idnumber, u.name
-      FROM grades g
+      FROM e g
       JOIN users u ON g.idnumber = u.idnumber
       WHERE g.subjectid = ?
       `,

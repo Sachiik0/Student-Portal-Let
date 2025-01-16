@@ -49,19 +49,31 @@ export default function AdminPage() {
 
   // Fetch enrolled students for a subject
   const fetchEnrolledStudents = async (subjectId) => {
+    console.log('Fetching enrolled students for subject ID:', subjectId);
+    
     try {
-      const response = await fetch(`/api/admin/users/get-student?subject_id=${subjectId}`, {
-        method: 'GET', // Change method to GET if backend expects GET
+      const response = await fetch('/api/admin/users/get-student', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ subjectid: subjectId }),
       });
   
       if (response.ok) {
         const data = await response.json();
-        setEnrolledStudents(data.students);
-        setShowEnrolledStudentsModal(true); // Show the modal
+        console.log(data);  // Check the structure of data
+        
+        // Directly use the array of students from the response
+        if (Array.isArray(data)) {
+          setEnrolledStudents(data); // Set the students data
+          setShowEnrolledStudentsModal(true);  // Show the modal
+        } else {
+          setMessage('No students found.');
+        }
       } else {
-        const errorText = await response.text();
-        const error = errorText ? JSON.parse(errorText) : { message: 'Failed to fetch enrolled students.' };
-        setMessage(`Error: ${error.message}`);
+        const errorData = await response.json();
+        setMessage(`Error: ${errorData.message || 'Failed to fetch enrolled students.'}`);
       }
     } catch (error) {
       console.error('Error fetching enrolled students:', error);
@@ -69,7 +81,7 @@ export default function AdminPage() {
     }
   };
   
-
+  
   // Add a new subject
   const handleAddSubject = async (e) => {
     e.preventDefault();
@@ -285,7 +297,7 @@ export default function AdminPage() {
                 required
               />
               <div className="flex space-x-4">
-                <button type="submit" className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                <button type="submit" className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
                   Add Subject
                 </button>
                 <button
@@ -301,108 +313,67 @@ export default function AdminPage() {
         </div>
       )}
 
-<div className="overflow-x-auto mt-8">
-  {subjects.length === 0 ? (
-    <p>No subjects available.</p>
-  ) : (
-    <table className="min-w-full border-collapse border border-gray-300">
-      <thead>
-        <tr className="bg-gray-200">
-          <th className="border px-4 py-2">Subject ID</th>
-          <th className="border px-4 py-2">Subject Code</th>
-          <th className="border px-4 py-2">Subject Name</th>
-          <th className="border px-4 py-2">Section</th>
-          <th className="border px-4 py-2">Department</th>
-          <th className="border px-4 py-2">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {subjects.map((subject) => (
-          <tr key={subject.subject_id}>
-            <td className="border px-4 py-2">{subject.subject_id}</td>
-            <td className="border px-4 py-2">{subject.subject_code}</td>
-            <td className="border px-4 py-2">{subject.subject_name}</td>
-            <td className="border px-4 py-2">{subject.section}</td>
-            <td className="border px-4 py-2">{subject.department}</td>
-            <td className="border px-4 py-2 space-x-4">
-              <button
-                onClick={() => {
-                  setSelectedSubject(subject.subject_id);
-                  setShowEnrollForm(true);
-                }}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                Enroll Students
-              </button>
-              {/* Button to fetch enrolled students */}
-              <button
-                onClick={() => fetchEnrolledStudents(subject.subject_id)}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-              >
-                Fetch Enrolled Students
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )}
-</div>
-
-
-{/* Display Enrolled Students */}
-
-{showEnrolledStudentsModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 z-50">
-    <div className="bg-white p-8 rounded-md shadow-md w-1/2 max-w-lg">
-      <h3 className="text-xl font-bold mb-4">Enrolled Students</h3>
-      <ul className="list-disc pl-5">
-        {enrolledStudents.map((student, index) => (
-          <li key={`${student.idnumber}-${index}`}>{student.name} ({student.idnumber})</li>
-        ))}
-      </ul>
-      <button
-  onClick={() => setShowEnrolledStudentsModal(false)}
-  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
->
-  Close
-</button>
-    </div>
-  </div>
-)}
-
-      {showEnrollForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 z-50">
-          <div className="bg-white p-8 rounded-md shadow-md w-1/3">
-            <h3 className="text-xl font-bold mb-4">Enroll Students to {selectedSubject}</h3>
-            <form onSubmit={handleEnrollStudents} className="space-y-4">
-              <textarea
-                placeholder="Enter student IDs, separated by commas"
-                value={studentIds}
-                onChange={(e) => setStudentIds(e.target.value)}
-                className="w-full p-3 border rounded-md"
-              />
-              <div className="flex space-x-4">
-                <button type="submit" className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                  Enroll
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowEnrollForm(false)}
-                  className="px-6 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
+      {subjects.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-xl font-semibold">Subjects</h3>
+          <table className="table-auto w-full mt-4 border-collapse">
+            <thead>
+              <tr>
+                <th className="py-2 px-4 border">Subject Code</th>
+                <th className="py-2 px-4 border">Subject Name</th>
+                <th className="py-2 px-4 border">Department</th>
+                <th className="py-2 px-4 border">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {subjects.map((subject) => (
+                <tr key={subject.subject_id}>
+                  <td className="py-2 px-4 border">{subject.subject_code}</td>
+                  <td className="py-2 px-4 border">{subject.subject_name}</td>
+                  <td className="py-2 px-4 border">{subject.department}</td>
+                  <td className="py-2 px-4 border">
+                    <button
+                      onClick={() => fetchEnrolledStudents(subject.subject_id)}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      View Enrolled Students
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      <p className="mt-4 text-red-500">{message}</p>
-    </div>
+      {message && <p className="text-red-500 mt-4">{message}</p>}
 
-    
+      {showEnrolledStudentsModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 z-50">
+          <div className="bg-white p-8 rounded-md shadow-md w-1/3">
+            <h3 className="text-xl font-bold mb-4">Enrolled Students</h3>
+            {enrolledStudents.length > 0 ? (
+              <ul className="space-y-2">
+                {enrolledStudents.map((student) => (
+                  <li key={student.student_id} className="border-b pb-2">
+                    <p>{student.name}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No students enrolled in this subject.</p>
+            )}
+            <div className="flex justify-end space-x-4 mt-4">
+              <button
+                onClick={() => setShowEnrolledStudentsModal(false)}
+                className="px-6 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
-

@@ -15,7 +15,7 @@ export async function POST(req) {
     }
 
     const connection = await getConnection();
-    const query = 'SELECT * FROM grades WHERE subjectid = ?'; // Adjust table/column names
+    const query = 'SELECT * FROM enrolled WHERE subjectid = ?'; // Adjust table/column names
     const [students] = await connection.execute(query, [subjectid]);
 
     await connection.end();

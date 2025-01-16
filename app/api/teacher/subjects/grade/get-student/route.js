@@ -21,9 +21,9 @@ export async function POST(req) {
     // Adjusted query to correctly link the tables
     const query = `
       SELECT users.idNumber,users.name
-      FROM grades
-      JOIN users ON grades.idnumber = users.idNumber
-      WHERE grades.subjectId = ?`;
+      FROM enrolled
+      JOIN users ON enrolled.idnumber = users.idNumber
+      WHERE enrolled.subjectId = ?`;
 
     const [students] = await connection.execute(query, [subjectid]);
 

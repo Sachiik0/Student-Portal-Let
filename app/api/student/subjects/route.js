@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getConnection } from '@/lib/db';
 
-export async function GET(request, { params }) {
+export async function POST(request) {
   try {
-    // Use async/await to resolve params properly
-    const { idNumber } = await params;
+    const { idNumber } = await request.json(); // Retrieve student ID from the request body
 
     // Validate the idNumber
     if (!idNumber) {

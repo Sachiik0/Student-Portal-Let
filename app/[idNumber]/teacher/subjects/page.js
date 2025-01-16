@@ -69,9 +69,9 @@ function TeacherSubjectsPage() {
   
     let apiUrl;
     if (selectedSubject.department === 'COLLEGE') {
-      apiUrl = '/api/teacher/upload/college';
+      apiUrl = '/api/teacher/subjects/grade/upload/college';
     } else if (selectedSubject.department === 'SENIOR HIGH SCHOOL' || selectedSubject.department === 'EJHS') {
-      apiUrl = '/api/teacher/upload/ejhs-shs';
+      apiUrl = '/api/teacher/subjects/grade/upload/ejhs-shs';
     } else {
       setError('Unsupported department.');
       return;

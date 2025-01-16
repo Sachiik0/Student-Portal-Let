@@ -10,6 +10,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 function StudentSubjectsPage() {
   const [subjects, setSubjects] = useState([]);
   const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [grades, setGrades] = useState([]);
   const router = useRouter();
 
   // Fetch subjects for the logged-in student
@@ -21,11 +24,14 @@ function StudentSubjectsPage() {
       }
 
       // Fetch the student's subjects from the correct API endpoint
-      const res = await fetch(`/api/student/${user.idNumber}/get/subjects`, {
-        method: 'GET',
+      const res = await fetch(`/api/student/subjects`, {
+        method: 'POST', // Use POST method to send data
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          idNumber: user.idNumber, // Pass student ID here
+        }),
       });
 
       if (!res.ok) {
@@ -52,20 +58,77 @@ function StudentSubjectsPage() {
     fetchSubjects();
   }, []);
 
-  // Logout function
+  // Fetch grades for the selected subject
+  const fetchGrades = async (subjectId, department) => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.idNumber) {
+        throw new Error('Unauthorized: Missing user info.');
+      }
+
+      // Normalize department: trim and convert to uppercase
+      const normalizedDepartment = department?.trim().toUpperCase(); // Ensure it is trimmed and uppercase
+
+      console.log('Department:', normalizedDepartment); // Debug log to verify department value
+
+      // Check if the department is 'COLLEGE' (case-insensitive) and set the endpoint
+      const endpoint = normalizedDepartment === 'COLLEGE'
+        ? '/api/student/grades/college'
+        : '/api/student/grades/ejhs-shs';
+
+      // Fetch grades for the selected subject
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idNumber: user.idNumber,
+          subjectId: subjectId,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to fetch grades.');
+      }
+
+      const data = await res.json();
+      setGrades(data.grades); // Set grades for the selected subject
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'An error occurred while fetching grades.');
+    }
+  };
+
+  // Handle logout
   const handleLogout = () => {
     localStorage.removeItem('user'); // Clear session
     router.push(process.env.NEXT_PUBLIC_BASE_URL || '/'); // Redirect to home
   };
 
-  // Navigate to the grades page for a specific subject
-  const handleViewGrades = (subjectId) => {
+  // Show modal with subject, user details, and grades
+  const handleViewGrades = (subjectId, department) => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user && user.idNumber) {
-      router.push(`/${user.idNumber}/student/subjects/grades/${subjectId}`);
+      const subject = subjects.find(sub => sub.subject_id === subjectId);
+      setSelectedSubject({
+        subjectId,
+        idNumber: user.idNumber,
+        department: subject?.department?.trim(), // Trim spaces to avoid issues with comparison
+      });
+      fetchGrades(subjectId, subject?.department?.trim()); // Pass trimmed department value
+      setShowModal(true);
     } else {
       setError('Unauthorized: Missing user info.');
     }
+  };
+
+  // Close the modal
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedSubject(null);
+    setGrades([]); // Clear grades when closing the modal
   };
 
   return (
@@ -106,7 +169,7 @@ function StudentSubjectsPage() {
               )}
               {/* Add "View Grades" button */}
               <Button
-                onClick={() => handleViewGrades(subject.subject_id)}
+                onClick={() => handleViewGrades(subject.subject_id, subject.department)}
                 className="mt-4 w-full"
                 variant="outline"
               >
@@ -119,6 +182,52 @@ function StudentSubjectsPage() {
 
       {subjects.length === 0 && !error && (
         <p className="text-center text-gray-500 mt-6">No subjects found.</p>
+      )}
+
+      {/* Modal for showing subject, idNumber, and grades */}
+      {showModal && selectedSubject && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+            <h3 className="text-xl font-semibold mb-4">Grades for Subject</h3>
+            <div className="space-y-4">
+              <p>
+                <strong>Subject ID:</strong> {selectedSubject.subjectId}
+              </p>
+              <p>
+                <strong>Student ID:</strong> {selectedSubject.idNumber}
+              </p>
+              
+              {/* Add department here */}
+              <p>
+                <strong>Department:</strong> {selectedSubject.department}
+              </p>
+
+              {/* Display grades here */}
+              {grades && Object.keys(grades).length > 0 ? (
+                <div>
+                  <h4 className="font-medium">Grades:</h4>
+                  <ul className="space-y-2 overflow-y-auto max-h-60">
+                    {Object.entries(grades).map(([key, value]) => (
+                      <li key={key}>
+                        <p>
+                          <strong>{key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}:</strong> {value}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p>No grades found for this subject.</p>
+              )}
+              
+              <div className="mt-4 flex justify-end space-x-4">
+                <Button onClick={closeModal} variant="outline">
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -132,21 +132,34 @@ function StudentSubjectsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Student Subjects</h1>
-        <Button onClick={handleLogout} variant="outline">
-          Logout
-        </Button>
+    <div className="min-h-screen bg-white text-black">
+      {/* Navbar */}
+      <div className="bg-gray-900 text-white py-3 px-6 flex justify-between items-center">
+        <span className="text-lg font-bold">📚 Student Subjects</span>
+        <div>
+          <button onClick={handleLogout} className="text-white underline">
+            Log off
+          </button>
+        </div>
       </div>
 
+      {/* Page Header */}
+      <div className="max-w-6xl mx-auto py-8 px-6">
+        <h1 className="text-2xl font-bold">📘 Your Enrolled Subjects</h1>
+        <p className="text-gray-700 mt-2">
+          Below is the list of subjects you&apos;re enrolled in. Click <strong>&quot;View Grades&quot;</strong> to check your grades.
+        </p>
+      </div>
+
+      {/* Error Alert */}
       {error && (
-        <Alert variant="destructive" className="mb-6">
+        <Alert variant="destructive" className="max-w-6xl mx-auto mb-6">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
+      {/* Display Subjects */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {subjects.map((subject) => (
           <Card key={subject.subject_id} className="shadow-md">

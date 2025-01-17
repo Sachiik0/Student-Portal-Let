@@ -7,6 +7,7 @@ const db = mysql.createPool({
   user: process.env.DB_USER, // e.g., 'root'
   password: process.env.DB_PASSWORD, // e.g., 'password'
   database: process.env.DB_NAME, // e.g., 'school_database'
+  port: process.env.DB_PORT, // e.g., 3308
 });
 
 export async function GET(request) {

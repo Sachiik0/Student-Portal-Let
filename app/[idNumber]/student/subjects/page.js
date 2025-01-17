@@ -153,34 +153,26 @@ function StudentSubjectsPage() {
 
       {/* Error Alert */}
       {error && (
-        <Alert variant="destructive" className="max-w-6xl mx-auto mb-6">
+        <Alert variant="destructive" className="max-w-6xl mx-auto mb-6 p-4 rounded-lg shadow-lg bg-red-500 text-white">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {/* Display Subjects */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 px-4">
         {subjects.map((subject) => (
-          <Card key={subject.subject_id} className="shadow-md">
+          <Card key={subject.subject_id} className="shadow-md p-4">
             <CardHeader>
               <CardTitle>{subject.subject_code}</CardTitle>
               <CardDescription>{subject.subject_name}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p>
-                <strong>Section:</strong> {subject.section}
-              </p>
-              <p>
-                <strong>Department:</strong> {subject.department}
-              </p>
-              {/* Add Teacher Name */}
+            <CardContent className="space-y-2">
+              <p><strong>Section:</strong> {subject.section}</p>
+              <p><strong>Department:</strong> {subject.department}</p>
               {subject.teacher_name && (
-                <p>
-                  <strong>Teacher:</strong> {subject.teacher_name}
-                </p>
+                <p><strong>Teacher:</strong> {subject.teacher_name}</p>
               )}
-              {/* Add "View Grades" button */}
               <Button
                 onClick={() => handleViewGrades(subject.subject_id, subject.department)}
                 className="mt-4 w-full"
@@ -199,49 +191,48 @@ function StudentSubjectsPage() {
 
       {/* Modal for showing subject, idNumber, and grades */}
       {showModal && selectedSubject && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
-            <h3 className="text-xl font-semibold mb-4">Grades for Subject</h3>
-            <div className="space-y-4">
-              <p>
-                <strong>Subject ID:</strong> {selectedSubject.subjectId}
-              </p>
-              <p>
-                <strong>Student ID:</strong> {selectedSubject.idNumber}
-              </p>
-              
-              {/* Add department here */}
-              <p>
-                <strong>Department:</strong> {selectedSubject.department}
-              </p>
+  <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-8 max-w-4xl w-full shadow-lg">
+      <h3 className="text-2xl font-semibold mb-6 text-gray-900">Grades for Subject</h3>
+      <div className="space-y-6">
+        <p>
+          <strong className="font-medium">Subject ID:</strong> {selectedSubject.subjectId}
+        </p>
+        <p>
+          <strong className="font-medium">Student ID:</strong> {selectedSubject.idNumber}
+        </p>
+        <p>
+          <strong className="font-medium">Department:</strong> {selectedSubject.department}
+        </p>
 
-              {/* Display grades here */}
-              {grades && Object.keys(grades).length > 0 ? (
-                <div>
-                  <h4 className="font-medium">Grades:</h4>
-                  <ul className="space-y-2 overflow-y-auto max-h-60">
-                    {Object.entries(grades).map(([key, value]) => (
-                      <li key={key}>
-                        <p>
-                          <strong>{key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}:</strong> {value}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <p>No grades found for this subject.</p>
-              )}
-              
-              <div className="mt-4 flex justify-end space-x-4">
-                <Button onClick={closeModal} variant="outline">
-                  Close
-                </Button>
-              </div>
-            </div>
+        {/* Display grades here */}
+        {grades && Object.keys(grades).length > 0 ? (
+          <div>
+            <h4 className="font-medium text-lg">Grades:</h4>
+            <ul className="space-y-3 overflow-y-auto max-h-60">
+              {Object.entries(grades).map(([key, value]) => (
+                <li key={key}>
+                  <p>
+                    <strong className="font-medium">{key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}:</strong> {value}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </div>
+        ) : (
+          <p className="text-gray-500">No grades found for this subject.</p>
+        )}
+        
+        <div className="mt-6 flex justify-end space-x-4">
+          <Button onClick={closeModal} variant="outline" className="px-6 py-2">
+            Close
+          </Button>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

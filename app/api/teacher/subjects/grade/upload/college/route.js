@@ -60,11 +60,12 @@ export async function POST(req) {
     console.log('Connecting to database');
 
     connection = await mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      password: '',
-      database: 'Letran',
-    });
+          host: process.env.DB_HOST, // e.g., 'localhost'
+          user: process.env.DB_USER, // e.g., 'root'
+          password: process.env.DB_PASSWORD, // e.g., 'password'
+          database: process.env.DB_NAME, // e.g., 'school_database'
+          port: process.env.DB_PORT, // e.g., 3308
+        });
 
     const query = `
       INSERT INTO college_grades (

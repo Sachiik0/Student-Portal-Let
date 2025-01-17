@@ -15,10 +15,13 @@ function TeacherSubjectsPage() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const router = useRouter();
 
+  // Retrieve user data safely
+  const user = JSON.parse(localStorage.getItem('user'));
+  const idNumber = user?.idNumber; // Ensure idNumber exists
+
   const fetchSubjects = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (!user || !user.idNumber) {
+      if (!idNumber) {
         throw new Error('Unauthorized: Missing user info.');
       }
 
@@ -74,7 +77,7 @@ function TeacherSubjectsPage() {
     formData.append('department', selectedSubject.department);
 
     let apiUrl;
-    if (selectedSubject.department === 'COLLEGE') {
+    if (selectedSubject.department.toUpperCase() === 'COLLEGE') {
       apiUrl = '/api/teacher/subjects/grade/upload/college';
     } else if (selectedSubject.department === 'SENIOR HIGH SCHOOL' || selectedSubject.department === 'EJHS') {
       apiUrl = '/api/teacher/subjects/grade/upload/ejhs-shs';
@@ -116,7 +119,7 @@ function TeacherSubjectsPage() {
       <div className="bg-gray-900 text-white py-3 px-6 flex justify-between items-center">
         <span className="text-lg font-bold">📚 Subjects | Colegio de San Juan de Letran</span>
         <div>
-          <button onClick={() => router.push('/teacher')} className="text-white underline mr-4">
+          <button onClick={() => idNumber && router.push(`/${idNumber}/teacher/home`)} className="text-white underline mr-4">
             Back to Dashboard
           </button>
           <button onClick={() => { localStorage.removeItem('user'); router.push('/'); }} className="text-white underline">

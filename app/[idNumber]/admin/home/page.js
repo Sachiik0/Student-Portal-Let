@@ -28,6 +28,7 @@ export default function AdminPage() {
   const [showEnrollForm, setShowEnrollForm] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [studentIds, setStudentIds] = useState('');
+  const [showAddStudentForm, setShowAddStudentForm] = useState(false);
 
   const router = useRouter();
 
@@ -158,6 +159,35 @@ export default function AdminPage() {
         setShowEnrollForm(false);
         setStudentIds('');
         fetchEnrolledStudents(selectedSubject);
+      } else {
+        const error = await response.json();
+        setMessage(`Error: ${error.message}`);
+      }
+    } catch (err) {
+      setMessage(`Error: ${err.message}`);
+    }
+  };
+
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    const payload = {
+      subject_id: selectedSubject,
+      student_ids: studentIds.split(',').map((id) => id.trim()),
+    };
+
+    try {
+      const response = await fetch('/api/admin/users/add-student', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setMessage('Students added successfully!');
+        setShowAddStudentForm(false);
+        setStudentIds('');
       } else {
         const error = await response.json();
         setMessage(`Error: ${error.message}`);
@@ -313,6 +343,36 @@ export default function AdminPage() {
         </div>
       )}
 
+      {showAddStudentForm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 z-50">
+          <div className="bg-white p-8 rounded-md shadow-md w-1/3">
+            <h3 className="text-xl font-bold mb-4">Add Students to Subject</h3>
+            <form onSubmit={handleAddStudent} className="space-y-6">
+              <input
+                type="text"
+                placeholder="Enter Student IDs (comma separated)"
+                value={studentIds}
+                onChange={(e) => setStudentIds(e.target.value)}
+                className="w-full p-3 border rounded-md"
+                required
+              />
+              <div className="flex space-x-4">
+                <button type="submit" className="px-6 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">
+                  Add Students
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddStudentForm(false)}
+                  className="px-6 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {subjects.length > 0 && (
         <div className="mt-6">
           <h3 className="text-xl font-semibold">Subjects</h3>
@@ -337,6 +397,15 @@ export default function AdminPage() {
                       className="text-blue-500 hover:text-blue-700"
                     >
                       View Enrolled Students
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedSubject(subject.subject_id);
+                        setShowAddStudentForm(true);
+                      }}
+                      className="text-yellow-500 hover:text-yellow-700 ml-4"
+                    >
+                      Add Student
                     </button>
                   </td>
                 </tr>

@@ -70,36 +70,63 @@ function TeacherSubjectsPage() {
       setError('Missing subject details.');
       return;
     }
-
+  
     const formData = new FormData();
     formData.append('file', file);
     formData.append('subject_id', selectedSubject.subject_id);
     formData.append('department', selectedSubject.department);
-
-    let apiUrl;
+  
+    let apiUrlgrades;
+    let apiUrlcriteria;
+    let apiUrlhighest;
+  
     if (selectedSubject.department.toUpperCase() === 'COLLEGE') {
-      apiUrl = '/api/teacher/subjects/grade/upload/college';
-    } else if (selectedSubject.department === 'SENIOR HIGH SCHOOL' || selectedSubject.department === 'EJHS') {
-      apiUrl = '/api/teacher/subjects/grade/upload/ejhs-shs';
+      apiUrlgrades = '/api/teacher/subjects/grade/upload/college';
+      apiUrlcriteria = '/api/teacher/subjects/grade/criteria/college';
+      apiUrlhighest = '/api/teacher/subjects/grade/highest-score/college';
+    } else if (selectedSubject.department === 'SENIOR HIGH SCHOOL' || selectedSubject.department === 'EJHS' || selectedSubject.department === 'SHS') {
+      apiUrlgrades = '/api/teacher/subjects/grade/upload/ejhs-shs';
+      apiUrlcriteria = '/api/teacher/subjects/grade/criteria/ejhs-shs';
+      apiUrlhighest = '/api/teacher/subjects/grade/highest-score/ejhs-shs';
     } else {
       setError('Unsupported department.');
       return;
     }
-
+  
     try {
-      const res = await fetch(apiUrl, {
+      const resGrades = await fetch(apiUrlgrades, {
         method: 'POST',
         body: formData,
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to upload the file. Please try again.');
+      const resGradesData = await resGrades.json(); // Logging response for debugging
+      console.log('Grades Upload Response:', resGradesData);
+      if (!resGrades.ok) {
+        throw new Error(resGradesData.error || 'Failed to upload the file. Please try again.');
       }
-
+  
+      const resCriteria = await fetch(apiUrlcriteria, {
+        method: 'POST',
+        body: formData,
+      });
+      const resCriteriaData = await resCriteria.json(); // Logging response for debugging
+      console.log('Criteria Upload Response:', resCriteriaData);
+      if (!resCriteria.ok) {
+        throw new Error(resCriteriaData.error || 'Failed to upload the criteria. Please try again.');
+      }
+  
+      const resHighestscore = await fetch(apiUrlhighest, {
+        method: 'POST',
+        body: formData,
+      });
+      const resHighestscoreData = await resHighestscore.json(); // Logging response for debugging
+      console.log('Highest Score Upload Response:', resHighestscoreData);
+      if (!resHighestscore.ok) {
+        throw new Error(resHighestscoreData.error || 'Failed to upload the highest score. Please try again.');
+      }
+  
       const lastUpdatedTime = new Date().toLocaleString();
       localStorage.setItem(`lastUpdated_${selectedSubject.subject_id}`, lastUpdatedTime);
-
+  
       alert('File uploaded successfully!');
       setLastUpdated(lastUpdatedTime);
       handleModalClose();
@@ -108,6 +135,9 @@ function TeacherSubjectsPage() {
       setError(`Upload error: ${err.message || 'An unexpected error occurred.'}`);
     }
   };
+  
+
+  
 
   useEffect(() => {
     fetchSubjects();

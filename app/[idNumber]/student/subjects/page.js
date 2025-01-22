@@ -25,29 +25,28 @@ function StudentSubjectsPage() {
 
       // Fetch the student's subjects from the correct API endpoint
       const res = await fetch(`/api/student/subjects`, {
-        method: 'POST', // Use POST method to send data
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          idNumber: user.idNumber, // Pass student ID here
+          idNumber: user.idNumber,
         }),
       });
 
       if (!res.ok) {
-        const errorData = await res.json(); // Parse error response
+        const errorData = await res.json();
         throw new Error(errorData.error || 'Failed to fetch subjects.');
       }
 
       const data = await res.json();
 
-      // If no data, inform the user
       if (data.length === 0) {
         setError('No subjects found for this student.');
         return;
       }
 
-      setSubjects(data); // Update the state with the subjects the student is enrolled in
+      setSubjects(data);
     } catch (err) {
       console.error(err);
       setError(err.message || 'An error occurred while fetching subjects.');
@@ -66,17 +65,17 @@ function StudentSubjectsPage() {
         throw new Error('Unauthorized: Missing user info.');
       }
 
-      // Normalize department: trim and convert to uppercase
-      const normalizedDepartment = department?.trim().toUpperCase(); // Ensure it is trimmed and uppercase
+      // Normalize department
+      const normalizedDepartment = department?.trim().toUpperCase();
 
       console.log('Department:', normalizedDepartment); // Debug log to verify department value
 
-      // Check if the department is 'COLLEGE' (case-insensitive) and set the endpoint
-      const endpoint = normalizedDepartment === 'COLLEGE'
-        ? '/api/student/grades/college'
-        : '/api/student/grades/ejhs-shs';
+      // Set the endpoint based on department
+      const endpoint =
+        normalizedDepartment === 'COLLEGE'
+          ? '/api/student/grades/college'
+          : '/api/student/grades/ejhs-shs';
 
-      // Fetch grades for the selected subject
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -94,7 +93,7 @@ function StudentSubjectsPage() {
       }
 
       const data = await res.json();
-      setGrades(data.grades); // Set grades for the selected subject
+      setGrades(data.grades);
     } catch (err) {
       console.error(err);
       setError(err.message || 'An error occurred while fetching grades.');
@@ -103,21 +102,21 @@ function StudentSubjectsPage() {
 
   // Handle logout
   const handleLogout = () => {
-    localStorage.removeItem('user'); // Clear session
-    router.push(process.env.NEXT_PUBLIC_BASE_URL || '/'); // Redirect to home
+    localStorage.removeItem('user');
+    router.push(process.env.NEXT_PUBLIC_BASE_URL || '/');
   };
 
   // Show modal with subject, user details, and grades
   const handleViewGrades = (subjectId, department) => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user && user.idNumber) {
-      const subject = subjects.find(sub => sub.subject_id === subjectId);
+      const subject = subjects.find((sub) => sub.subject_id === subjectId);
       setSelectedSubject({
         subjectId,
         idNumber: user.idNumber,
-        department: subject?.department?.trim(), // Trim spaces to avoid issues with comparison
+        department: subject?.department?.trim(),
       });
-      fetchGrades(subjectId, subject?.department?.trim()); // Pass trimmed department value
+      fetchGrades(subjectId, subject?.department?.trim());
       setShowModal(true);
     } else {
       setError('Unauthorized: Missing user info.');
@@ -128,7 +127,7 @@ function StudentSubjectsPage() {
   const closeModal = () => {
     setShowModal(false);
     setSelectedSubject(null);
-    setGrades([]); // Clear grades when closing the modal
+    setGrades([]);
   };
 
   return (
@@ -168,15 +167,22 @@ function StudentSubjectsPage() {
               <CardDescription>{subject.subject_name}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p><strong>Section:</strong> {subject.section}</p>
-              <p><strong>Department:</strong> {subject.department}</p>
+              <p>
+                <strong>Section:</strong> {subject.section}
+              </p>
+              <p>
+                <strong>Department:</strong> {subject.department}
+              </p>
               {subject.teacher_name && (
-                <p><strong>Teacher:</strong> {subject.teacher_name}</p>
+                <p>
+                  <strong>Teacher:</strong> {subject.teacher_name}
+                </p>
               )}
               <Button
                 onClick={() => handleViewGrades(subject.subject_id, subject.department)}
-                className="mt-4 w-full"
+                className={`mt-4 w-full ${showModal ? 'opacity-50 cursor-not-allowed' : ''}`} // Disable button when modal is open
                 variant="outline"
+                disabled={showModal} // Disable the button when modal is open
               >
                 View Grades
               </Button>
@@ -189,50 +195,52 @@ function StudentSubjectsPage() {
         <p className="text-center text-gray-500 mt-6">No subjects found.</p>
       )}
 
-      {/* Modal for showing subject, idNumber, and grades */}
+      {/* Modal for showing subject, ID number, and grades */}
       {showModal && selectedSubject && (
-  <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-lg p-8 max-w-4xl w-full shadow-lg">
-      <h3 className="text-2xl font-semibold mb-6 text-gray-900">Grades for Subject</h3>
-      <div className="space-y-6">
-        <p>
-          <strong className="font-medium">Subject ID:</strong> {selectedSubject.subjectId}
-        </p>
-        <p>
-          <strong className="font-medium">Student ID:</strong> {selectedSubject.idNumber}
-        </p>
-        <p>
-          <strong className="font-medium">Department:</strong> {selectedSubject.department}
-        </p>
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-4xl w-full shadow-lg">
+            <h3 className="text-2xl font-semibold mb-6 text-gray-900">Grades for Subject</h3>
+            <div className="space-y-6">
+              <p>
+                <strong className="font-medium">Subject ID:</strong> {selectedSubject.subjectId}
+              </p>
+              <p>
+                <strong className="font-medium">Student ID:</strong> {selectedSubject.idNumber}
+              </p>
+              <p>
+                <strong className="font-medium">Department:</strong> {selectedSubject.department}
+              </p>
 
-        {/* Display grades here */}
-        {grades && Object.keys(grades).length > 0 ? (
-          <div>
-            <h4 className="font-medium text-lg">Grades:</h4>
-            <ul className="space-y-3 overflow-y-auto max-h-60">
-              {Object.entries(grades).map(([key, value]) => (
-                <li key={key}>
-                  <p>
-                    <strong className="font-medium">{key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}:</strong> {value}
-                  </p>
-                </li>
-              ))}
-            </ul>
+              {/* Display grades */}
+              {grades && Object.keys(grades).length > 0 ? (
+                <div>
+                  <h4 className="font-medium text-lg">Grades:</h4>
+                  <ul className="space-y-3 overflow-y-auto max-h-60">
+                    {Object.entries(grades).map(([key, value]) => (
+                      <li key={key}>
+                        <p>
+                          <strong className="font-medium">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}:
+                          </strong>{' '}
+                          {value}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-gray-500">No grades found for this subject.</p>
+              )}
+
+              <div className="mt-6 flex justify-end space-x-4">
+                <Button onClick={closeModal} variant="outline" className="px-6 py-2">
+                  Close
+                </Button>
+              </div>
+            </div>
           </div>
-        ) : (
-          <p className="text-gray-500">No grades found for this subject.</p>
-        )}
-        
-        <div className="mt-6 flex justify-end space-x-4">
-          <Button onClick={closeModal} variant="outline" className="px-6 py-2">
-            Close
-          </Button>
         </div>
-      </div>
-    </div>
-  </div>
-)}
-
+      )}
     </div>
   );
 }

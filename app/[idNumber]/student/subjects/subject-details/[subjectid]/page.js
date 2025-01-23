@@ -7,27 +7,30 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 export default function SubjectPage() {
   const { idNumber, subjectid } = useParams(); // Extracting idNumber and subjectid from the URL
   const [data, setData] = useState(null);
+  const [highestScores, setHighestScores] = useState(null); // To store highest score data
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (subjectid && idNumber) {
       setIsLoading(true); // Set loading to true before fetching
-      fetchSubjectData(subjectid, idNumber);
+      fetchSubjectData(subjectid); // Fetch subject data using subjectid
+      fetchHighestScoreData(subjectid); // Fetch highest scores data
     }
   }, [subjectid, idNumber]); // Run whenever subjectid or idNumber changes
 
-  const fetchSubjectData = async (subjectId, idNumber) => {
+  const fetchSubjectData = async (subjectId) => {
     try {
       const response = await fetch('/api/student/grades/college/fetch-criteria', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ subjectid: subjectId, idNumber: idNumber }),
+        body: JSON.stringify({ subjectid: subjectId }), // Send subjectid in the body
       });
 
       const result = await response.json();
+      console.log('Subject Data:', result); // Log the subject data
 
       if (response.ok) {
         setData(result.data);
@@ -39,16 +42,49 @@ export default function SubjectPage() {
     } catch (err) {
       setError('An error occurred while fetching the data');
       setData(null);
+    }
+  };
+
+  // Function to fetch highest scores data
+  const fetchHighestScoreData = async (subjectId) => {
+    try {
+      const response = await fetch('/api/student/grades/college/fetch-highest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ subjectid: subjectId }), // Send subjectid in the body
+      });
+
+      const result = await response.json();
+      console.log('Highest Score Data:', result); // Log the result
+
+      if (response.ok) {
+        setHighestScores(result.data); // Store the highest scores data
+        console.log('Highest Scores:', result.data); // Log the highest scores
+        setError('');
+      } else {
+        setHighestScores(null);
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('An error occurred while fetching highest scores');
+      setHighestScores(null);
     } finally {
       setIsLoading(false); // Stop loading when data fetch is complete
     }
   };
 
   const renderActivityData = (prefix) => {
-    if (!data) return null;
+    if (!data || !highestScores) return null; // Only render if both data and highestScores are available
+
+    // Access the first element of highestScores
+    const highestScoresData = highestScores[0] || {}; // Get the first object or an empty object
+
+    console.log('Current Highest Scores:', highestScoresData); // Log the highest scores
 
     const title = data[`${prefix}_Title`];
-    
+
     // Only render if the activity title is not null or empty
     if (!title) return null;
 
@@ -56,9 +92,12 @@ export default function SubjectPage() {
     const criteria = Array.from({ length: 5 }, (_, i) => {
       const criterion = {
         title: data[`${prefix}_criteria${i + 1}_title`],
-        highestScore: data[`${prefix}_criteria${i + 1}_highest_score`],
-        score: data[`${prefix}_criteria${i + 1}_score`],
+        highestScore: highestScoresData[`${prefix}_criteria${i + 1}_highest_score`] || 0, // Get highest score from highestScores data
+        score: data[`${prefix}_criteria${i + 1}_score`] || 0, // Default to 0 if missing
       };
+
+      // Log the constructed keys for debugging
+      console.log(`Accessing highest score for ${prefix}_criteria${i + 1}:`, highestScoresData[`${prefix}_criteria${i + 1}_highest_score`]);
 
       // Only include the criterion if its title is not null or empty
       return criterion.title ? criterion : null;

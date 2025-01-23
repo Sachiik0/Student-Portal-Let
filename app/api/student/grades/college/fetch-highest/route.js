@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
 
-export async function GET(req) {
+export async function POST(req) {
   let connection;
   try {
-    console.log('Received request to fetch data');
+    console.log('Received POST request to fetch data');
     
-    const url = new URL(req.url);
-    const subjectId = url.searchParams.get('subjectid'); // Get the subjectid from query parameters
+    const { subjectid } = await req.json(); // Parse JSON body to get the subjectid
 
-    if (!subjectId) {
+    if (!subjectid) {
       console.error('Subject ID is required');
       return NextResponse.json({ error: 'Subject ID is required' }, { status: 400 });
     }
@@ -31,10 +30,10 @@ export async function GET(req) {
     `;
 
     console.log('Executing database query');
-    const [rows] = await connection.execute(query, [subjectId]);
+    const [rows] = await connection.execute(query, [subjectid]);
 
     if (rows.length === 0) {
-      console.log('No data found for subject ID:', subjectId);
+      console.log('No data found for subject ID:', subjectid);
       return NextResponse.json({ message: 'No data found for the provided subject ID' }, { status: 404 });
     }
 

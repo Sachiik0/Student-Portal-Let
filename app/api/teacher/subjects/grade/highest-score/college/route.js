@@ -89,7 +89,7 @@ export async function POST(req) {
 
         const placeholders = columns.map(() => '?').join(', ');
 
-        const query = `INSERT INTO ejhs_shs_highest_score (${columns.join(', ')}) 
+        const query = `INSERT INTO college_highest_score (${columns.join(', ')}) 
                VALUES (${placeholders}) 
                ON DUPLICATE KEY UPDATE 
                ${columns.map(col => `${col} = VALUES(${col})`).join(', ')}, subject_id = VALUES(subject_id)`;

@@ -1,23 +1,63 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation'; // Importing from next/navigation for dynamic params
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Typography, CircularProgress } from '@mui/material';
+import { useParams, useRouter } from 'next/navigation';
+import {
+  Card,
+  CardContent,
+  Typography,
+  CircularProgress,
+  Alert,
+  AlertTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+} from '@mui/material';
 
 export default function SubjectPage() {
-  const { idNumber, subjectid } = useParams(); // Extracting idNumber and subjectid from the URL
+  const { idNumber, subjectid } = useParams();
   const [data, setData] = useState(null);
-  const [highestScores, setHighestScores] = useState(null); // To store highest score data
+  const [grades, setGrades] = useState(null);
+  const [highestScores, setHighestScores] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     if (subjectid && idNumber) {
-      setIsLoading(true); // Set loading to true before fetching
-      fetchSubjectData(subjectid); // Fetch subject data using subjectid
-      fetchHighestScoreData(subjectid); // Fetch highest scores data
+      setIsLoading(true);
+      fetchSubjectData(subjectid);
+      fetchHighestScoreData(subjectid);
+      fetchGrades(subjectid, idNumber);
     }
-  }, [subjectid, idNumber]); // Run whenever subjectid or idNumber changes
+  }, [subjectid, idNumber]);
+
+  const fetchGrades = async (subjectId, idNumber) => {
+    try {
+      const response = await fetch('/api/student/grades/college/fetch-grades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subjectId, idNumber }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setGrades(result.grades || {});
+        setError('');
+      } else {
+        setGrades({});
+        setError(result.error || 'Failed to fetch grades');
+      }
+    } catch (err) {
+      setGrades({});
+      setError('An error occurred while fetching grades');
+    }
+  };
 
   const fetchSubjectData = async (subjectId) => {
     try {
@@ -26,26 +66,24 @@ export default function SubjectPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ subjectid: subjectId }), // Send subjectid in the body
+        body: JSON.stringify({ subjectid: subjectId }),
       });
 
       const result = await response.json();
-      console.log('Subject Data:', result); // Log the subject data
 
       if (response.ok) {
-        setData(result.data);
+        setData(result.data || {});
         setError('');
       } else {
-        setData(null);
-        setError(result.error);
+        setData({});
+        setError(result.error || 'Failed to fetch subject data');
       }
     } catch (err) {
-      setError('An error occurred while fetching the data');
-      setData(null);
+      setData({});
+      setError('An error occurred while fetching subject data');
     }
   };
 
-  // Function to fetch highest scores data
   const fetchHighestScoreData = async (subjectId) => {
     try {
       const response = await fetch('/api/student/grades/college/fetch-highest', {
@@ -53,84 +91,69 @@ export default function SubjectPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ subjectid: subjectId }), // Send subjectid in the body
+        body: JSON.stringify({ subjectid: subjectId }),
       });
 
       const result = await response.json();
-      console.log('Highest Score Data:', result); // Log the result
 
       if (response.ok) {
-        setHighestScores(result.data); // Store the highest scores data
-        console.log('Highest Scores:', result.data); // Log the highest scores
+        setHighestScores(result.data || []);
         setError('');
       } else {
-        setHighestScores(null);
-        setError(result.error);
+        setHighestScores([]);
+        setError(result.error || 'Failed to fetch highest scores');
       }
     } catch (err) {
+      setHighestScores([]);
       setError('An error occurred while fetching highest scores');
-      setHighestScores(null);
     } finally {
-      setIsLoading(false); // Stop loading when data fetch is complete
+      setIsLoading(false);
     }
   };
 
   const renderActivityData = (prefix) => {
-    if (!data || !highestScores) return null; // Only render if both data and highestScores are available
-
-    // Access the first element of highestScores
-    const highestScoresData = highestScores[0] || {}; // Get the first object or an empty object
-
-    console.log('Current Highest Scores:', highestScoresData); // Log the highest scores
-
+    if (!data || !highestScores || !grades) return null;
+  
     const title = data[`${prefix}_Title`];
-
-    // Only render if the activity title is not null or empty
-    if (!title) return null;
-
-    // Filter criteria where title is not null or empty
+    if (!title) return null; // Skip if no activity title exists
+  
     const criteria = Array.from({ length: 5 }, (_, i) => {
-      const criterion = {
-        title: data[`${prefix}_criteria${i + 1}_title`],
-        highestScore: highestScoresData[`${prefix}_criteria${i + 1}_highest_score`] || 0, // Get highest score from highestScores data
-        score: data[`${prefix}_criteria${i + 1}_score`] || 0, // Default to 0 if missing
-      };
-
-      // Log the constructed keys for debugging
-      console.log(`Accessing highest score for ${prefix}_criteria${i + 1}:`, highestScoresData[`${prefix}_criteria${i + 1}_highest_score`]);
-
-      // Only include the criterion if its title is not null or empty
-      return criterion.title ? criterion : null;
-    }).filter(Boolean); // Remove null values from the array
-
-    // If there are no valid criteria, don't render the table
-    if (criteria.length === 0) return null;
-
-    const totalScore = criteria.reduce((acc, criterion) => acc + (criterion.score || 0), 0);
-    const totalHighestScore = criteria.reduce((acc, criterion) => acc + (criterion.highestScore || 0), 0);
-
+  const criterion = {
+    title: data[`${prefix}_criteria${i + 1}_title`],
+    highestScore: highestScores[0]?.[`${prefix}_criteria${i + 1}_highest_score`] || 0,
+    score: grades[`${prefix}_criteria${i + 1}_score`] || 0,
+  };
+  return criterion.title ? criterion : null; // Only include criteria if the title exists
+}).filter(Boolean);
+    
+  
+    const totalScore = criteria.reduce((sum, c) => sum + (c.score || 0), 0);
+    const totalHighestScore = criteria.reduce((sum, c) => sum + (c.highestScore || 0), 0);
+  
     return (
       <div key={prefix}>
-        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <Typography variant="h6">{title}</Typography>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Criteria Title</TableCell>
-                <TableCell>Highest Score Possible</TableCell>
-                <TableCell>Score</TableCell>
+                <TableCell>Criteria</TableCell>
+                <TableCell>Highest Possible</TableCell>
+                <TableCell>Your Score</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {criteria.map((criterion, index) => (
+              {criteria.map((c, index) => (
                 <TableRow key={index}>
-                  <TableCell>{criterion.title}</TableCell>
-                  <TableCell>{criterion.highestScore}</TableCell>
-                  <TableCell>{criterion.score}</TableCell>
+                  <TableCell>{c.title}</TableCell>
+                  <TableCell>{c.highestScore}</TableCell>
+                  <TableCell>{c.score}</TableCell>
                 </TableRow>
               ))}
               <TableRow>
-                <TableCell><strong>Total</strong></TableCell>
+                <TableCell>
+                  <strong>Total</strong>
+                </TableCell>
                 <TableCell>{totalHighestScore}</TableCell>
                 <TableCell>{totalScore}</TableCell>
               </TableRow>
@@ -140,12 +163,40 @@ export default function SubjectPage() {
       </div>
     );
   };
+  
+  const calculateGrandTotals = () => {
+    const components = [
+      { name: 'OBE Related Tasks', prefixes: ['ORT1', 'ORT2', 'ORT3', 'ORT4', 'ORT5', 'ORT6', 'ORT7', 'ORT8'] },
+      { name: 'Written Assessment', prefixes: ['WA1', 'WA2', 'WA3', 'WA4', 'WA5', 'WA6'] },
+      { name: 'Long Test', prefixes: ['long_test'] },
+      { name: 'Midterms/Finals', prefixes: ['midterm'] },
+    ];
+
+    return components.map((component) => {
+      const totalHighestScore = component.prefixes.reduce((total, prefix) => {
+        for (let i = 1; i <= 5; i++) {
+          const activityTitle = data?.[`${prefix}_Title`];
+          const criteriaTitle = data?.[`${prefix}_criteria${i}_title`];
+          if (activityTitle && criteriaTitle) {
+            total += highestScores?.[0]?.[`${prefix}_criteria${i}_highest_score`] || 0;
+          }
+        }
+        return total;
+      }, 0);
+
+      return { ...component, totalHighestScore };
+    });
+  };
+
+  const grandTotals = calculateGrandTotals();
 
   if (isLoading) {
     return (
       <Card sx={{ maxWidth: 600, margin: 'auto', padding: 2 }}>
         <CardContent>
-          <Typography variant="h6" align="center">Loading...</Typography>
+          <Typography variant="h6" align="center">
+            Loading...
+          </Typography>
           <CircularProgress sx={{ display: 'block', margin: 'auto' }} />
         </CardContent>
       </Card>
@@ -153,25 +204,94 @@ export default function SubjectPage() {
   }
 
   return (
-    <div>
-      <Card sx={{ maxWidth: 800, margin: 'auto', padding: 2 }}>
-        <CardContent>
-          <Typography variant="h5" gutterBottom align="center">Subject Data</Typography>
+    <div className="min-h-screen bg-white text-black">
+      {/* Navbar */}
+      <div className="bg-gray-900 text-white py-3 px-6 flex justify-between items-center">
+        <span className="text-lg font-bold">📚 Subject Details</span>
+        <button onClick={() => router.push('/')} className="text-white underline">
+          Log off
+        </button>
+      </div>
 
-          {error && <Typography color="error" variant="body2" align="center">{error}</Typography>}
+      {/* Content Area */}
+      <div className="max-w-6xl mx-auto py-8 px-6 flex flex-wrap lg:flex-nowrap gap-6">
+        {/* Main Table Area */}
+        <div className="flex-grow">
+          <h1 className="text-2xl font-bold mb-4">📘 Subject Data</h1>
+          <p className="text-gray-700 mb-4">
+            Below is the detailed information for the selected subject.
+          </p>
+
+          {/* Error Alert */}
+          {error && (
+            <Alert severity="error" className="mb-6 p-4 rounded-lg shadow-lg">
+              <AlertTitle>Error</AlertTitle>
+              {error}
+            </Alert>
+          )}
 
           {data && subjectid && idNumber && (
             <div>
               <Typography variant="h6" gutterBottom align="center">
                 Subject Data for Subject ID: {subjectid} and Student ID: {idNumber}
-              </Typography>
+                </Typography>
 
-              {/* Render Activity Data for each prefix */}
-              {['ORT1', 'ORT2', 'ORT3', 'ORT4', 'ORT5', 'ORT6', 'ORT7', 'ORT8', 'WA1', 'WA2', 'WA3', 'WA4', 'WA5', 'WA6', 'long_test', 'midterm'].map(prefix => renderActivityData(prefix))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+{/* Render Activity Data for each prefix */}
+{[
+  'ORT1',
+  'ORT2',
+  'ORT3',
+  'ORT4',
+  'ORT5',
+  'ORT6',
+  'ORT7',
+  'ORT8',
+  'WA1',
+  'WA2',
+  'WA3',
+  'WA4',
+  'WA5',
+  'WA6',
+  'long_test',
+  'midterm',
+].map((prefix) => renderActivityData(prefix))}
+</div>
+)}
+</div>
+
+{/* Grand Total Card */}
+<div className="w-full lg:w-1/3">
+<Card
+sx={{ backgroundColor: '#f5f5f5', boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)' }}
+>
+<CardContent>
+<Typography variant="h6" align="center" gutterBottom>
+  Grand Total
+</Typography>
+<TableContainer component={Paper}>
+  <Table>
+    <TableHead>
+      <TableRow>
+        <TableCell>Components</TableCell>
+        <TableCell>Score</TableCell>
+        <TableCell>Highest Possible Score</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {grandTotals.map((component, index) => (
+        <TableRow key={index}>
+          <TableCell>{component.name}</TableCell>
+          <TableCell>{component.totalScore}</TableCell>
+          <TableCell>{component.totalHighestScore}</TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</TableContainer>
+</CardContent>
+</Card>
+</div>
+</div>
+</div>
+);
 }

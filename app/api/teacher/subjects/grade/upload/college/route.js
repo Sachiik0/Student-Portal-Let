@@ -69,7 +69,7 @@ export async function POST(req) {
 
     const query = `
       INSERT INTO college_grades (
-        subject_id,
+        subjectid,
         idnumber,
         ORT1_criteria1_score, ORT1_criteria2_score, ORT1_criteria3_score, ORT1_criteria4_score, ORT1_criteria5_score,
         ORT2_criteria1_score, ORT2_criteria2_score, ORT2_criteria3_score, ORT2_criteria4_score, ORT2_criteria5_score,
@@ -98,7 +98,7 @@ export async function POST(req) {
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       )
       ON DUPLICATE KEY UPDATE
-        subject_id = VALUES(subject_id),
+        subjectid = VALUES(subjectid),
         idnumber = VALUES(idnumber),
         ORT1_criteria1_score = VALUES(ORT1_criteria1_score),
         ORT1_criteria2_score = VALUES(ORT1_criteria2_score),

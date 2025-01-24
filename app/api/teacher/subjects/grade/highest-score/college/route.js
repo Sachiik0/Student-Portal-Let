@@ -68,7 +68,7 @@ export async function POST(req) {
         });
 
         const columns = [
-          'subject_id',
+          'subjectid',
           'ORT1_criteria1_highest_score', 'ORT1_criteria2_highest_score', 'ORT1_criteria3_highest_score', 'ORT1_criteria4_highest_score', 'ORT1_criteria5_highest_score',
           'ORT2_criteria1_highest_score', 'ORT2_criteria2_highest_score', 'ORT2_criteria3_highest_score', 'ORT2_criteria4_highest_score', 'ORT2_criteria5_highest_score',
           'ORT3_criteria1_highest_score', 'ORT3_criteria2_highest_score', 'ORT3_criteria3_highest_score', 'ORT3_criteria4_highest_score', 'ORT3_criteria5_highest_score',
@@ -92,7 +92,7 @@ export async function POST(req) {
         const query = `INSERT INTO college_highest_score (${columns.join(', ')}) 
                VALUES (${placeholders}) 
                ON DUPLICATE KEY UPDATE 
-               ${columns.map(col => `${col} = VALUES(${col})`).join(', ')}, subject_id = VALUES(subject_id)`;
+               ${columns.map(col => `${col} = VALUES(${col})`).join(', ')}, subjectid = VALUES(subjectid)`;
 
         
 

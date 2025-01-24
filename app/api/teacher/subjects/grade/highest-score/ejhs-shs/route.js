@@ -64,7 +64,7 @@ export async function POST(req) {
         });
 
         const columns = [
-            "subject_id",
+            "subjectid",
             "WW1_criteria1_highest_score", "WW1_criteria2_highest_score", "WW1_criteria3_highest_score", "WW1_criteria4_highest_score", "WW1_criteria5_highest_score",
             "WW2_criteria1_highest_score", "WW2_criteria2_highest_score", "WW2_criteria3_highest_score", "WW2_criteria4_highest_score", "WW2_criteria5_highest_score",
             "WW3_criteria1_highest_score", "WW3_criteria2_highest_score", "WW3_criteria3_highest_score", "WW3_criteria4_highest_score", "WW3_criteria5_highest_score",

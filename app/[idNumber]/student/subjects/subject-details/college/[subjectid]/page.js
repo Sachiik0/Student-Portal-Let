@@ -113,23 +113,22 @@ export default function SubjectPage() {
 
   const renderActivityData = (prefix) => {
     if (!data || !highestScores || !grades) return null;
-  
+
     const title = data[`${prefix}_Title`];
     if (!title) return null; // Skip if no activity title exists
-  
+
     const criteria = Array.from({ length: 5 }, (_, i) => {
-  const criterion = {
-    title: data[`${prefix}_criteria${i + 1}_title`],
-    highestScore: highestScores[0]?.[`${prefix}_criteria${i + 1}_highest_score`] || 0,
-    score: grades[`${prefix}_criteria${i + 1}_score`] || 0,
-  };
-  return criterion.title ? criterion : null; // Only include criteria if the title exists
-}).filter(Boolean);
-    
-  
+      const criterion = {
+        title: data[`${prefix}_criteria${i + 1}_title`],
+        highestScore: highestScores[0]?.[`${prefix}_criteria${i + 1}_highest_score`] || 0,
+        score: grades[`${prefix}_criteria${i + 1}_score`] || 0,
+      };
+      return criterion.title ? criterion : null; // Only include criteria if the title exists
+    }).filter(Boolean);
+
     const totalScore = criteria.reduce((sum, c) => sum + (c.score || 0), 0);
     const totalHighestScore = criteria.reduce((sum, c) => sum + (c.highestScore || 0), 0);
-  
+
     return (
       <div key={prefix}>
         <Typography variant="h6">{title}</Typography>
@@ -163,8 +162,32 @@ export default function SubjectPage() {
       </div>
     );
   };
-  
-  const calculateGrandTotals = () => {
+
+  const calculateTotalScores = () => {
+    const components = [
+      { name: 'OBE Related Tasks', prefixes: ['ORT1', 'ORT2', 'ORT3', 'ORT4', 'ORT5', 'ORT6', 'ORT7', 'ORT8'] },
+      { name: 'Written Assessment', prefixes: ['WA1', 'WA2', 'WA3', 'WA4', 'WA5', 'WA6'] },
+      { name: 'Long Test', prefixes: ['long_test'] },
+      { name: 'Midterms/Finals', prefixes: ['midterm'] },
+    ];
+
+    return components.map((component) => {
+      const totalScore = component.prefixes.reduce((total, prefix) => {
+        for (let i = 1; i <= 5; i++) {
+          const activityTitle = data?.[`${prefix}_Title`];
+          const criteriaTitle = data?.[`${prefix}_criteria${i}_title`];
+          if (activityTitle && criteriaTitle) {
+            total += grades?.[`${prefix}_criteria${i}_score`] || 0;
+          }
+        }
+        return total;
+      }, 0);
+
+      return { ...component, totalScore };
+    });
+  };
+
+  const calculateTotalHighestScores = () => {
     const components = [
       { name: 'OBE Related Tasks', prefixes: ['ORT1', 'ORT2', 'ORT3', 'ORT4', 'ORT5', 'ORT6', 'ORT7', 'ORT8'] },
       { name: 'Written Assessment', prefixes: ['WA1', 'WA2', 'WA3', 'WA4', 'WA5', 'WA6'] },
@@ -188,7 +211,8 @@ export default function SubjectPage() {
     });
   };
 
-  const grandTotals = calculateGrandTotals();
+  const totalScores = calculateTotalScores();
+  const totalHighestScores = calculateTotalHighestScores();
 
   if (isLoading) {
     return (
@@ -234,64 +258,64 @@ export default function SubjectPage() {
             <div>
               <Typography variant="h6" gutterBottom align="center">
                 Subject Data for Subject ID: {subjectid} and Student ID: {idNumber}
-                </Typography>
+              </Typography>
 
-{/* Render Activity Data for each prefix */}
-{[
-  'ORT1',
-  'ORT2',
-  'ORT3',
-  'ORT4',
-  'ORT5',
-  'ORT6',
-  'ORT7',
-  'ORT8',
-  'WA1',
-  'WA2',
-  'WA3',
-  'WA4',
-  'WA5',
-  'WA6',
-  'long_test',
-  'midterm',
-].map((prefix) => renderActivityData(prefix))}
-</div>
-)}
-</div>
+              {/* Render Activity Data for each prefix */}
+              {[
+                'ORT1',
+                'ORT2',
+                'ORT3',
+                'ORT4',
+                'ORT5',
+                'ORT6',
+                'ORT7',
+                'ORT8',
+                'WA1',
+                'WA2',
+                'WA3',
+                'WA4',
+                'WA5',
+                'WA6',
+                'long_test',
+                'midterm',
+              ].map((prefix) => renderActivityData(prefix))}
+            </div>
+          )}
+        </div>
 
-{/* Grand Total Card */}
-<div className="w-full lg:w-1/3">
-<Card
-sx={{ backgroundColor: '#f5f5f5', boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)' }}
->
-<CardContent>
-<Typography variant="h6" align="center" gutterBottom>
-  Grand Total
-</Typography>
-<TableContainer component={Paper}>
-  <Table>
-    <TableHead>
-      <TableRow>
-        <TableCell>Components</TableCell>
-        <TableCell>Score</TableCell>
-        <TableCell>Highest Possible Score</TableCell>
-      </TableRow>
-    </TableHead>
-    <TableBody>
-      {grandTotals.map((component, index) => (
-        <TableRow key={index}>
-          <TableCell>{component.name}</TableCell>
-          <TableCell>{component.totalScore}</TableCell>
-          <TableCell>{component.totalHighestScore}</TableCell>
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
-</TableContainer>
-</CardContent>
-</Card>
-</div>
-</div>
-</div>
-);
+        {/* Grand Total Card */}
+        <div className="w-full lg:w-1/3">
+          <Card
+            sx={{ backgroundColor: '#f5f5f5', boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)' }}
+          >
+            <CardContent>
+              <Typography variant="h6" align="center" gutterBottom>
+                Grand Total
+              </Typography>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Components</TableCell>
+                      <TableCell>Score</TableCell>
+                      <TableCell>Highest Possible Score</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {totalScores.map((component, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{component.name}</TableCell>
+                        <TableCell>{component.totalScore}</TableCell> {/* From calculateTotalScores */}
+                        <TableCell>{totalHighestScores[index]?.totalHighestScore}</TableCell> {/* From calculateTotalHighestScores */}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
 }

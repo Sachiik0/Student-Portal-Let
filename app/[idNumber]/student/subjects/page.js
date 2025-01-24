@@ -120,20 +120,29 @@ function StudentSubjectsPage() {
                 </p>
               )}
               <Button
-  onClick={() => {
-    const user = JSON.parse(localStorage.getItem('user')); // Retrieve user info from localStorage
-    if (user && user.idNumber) {
-      router.push(`/${user.idNumber}/student/subjects/subject-details/${subject.subject_id}`);
+                onClick={() => {
+                  const user = JSON.parse(localStorage.getItem('user')); // Retrieve user info from localStorage
+                  if (user && user.idNumber) {
+                    const subjectPath = subject.department.toLowerCase() === 'college' 
+                      ? `/${user.idNumber}/student/subjects/subject-details/college/${subject.subject_id}`
+                      : (subject.department.toLowerCase() === 'ejhs' || subject.department.toLowerCase() === 'shs')
+                      ? `/${user.idNumber}/student/subjects/subject-details/ejhs-shs/${subject.subject_id}`
+                      : ''; // Add additional department checks if needed
 
-    } else {
-      console.error('User ID number is missing or invalid.');
-    }
-  }}
-  className="mt-4 w-full"
-  variant="outline"
->
-  View Grades
-</Button>
+                    if (subjectPath) {
+                      router.push(subjectPath);
+                    } else {
+                      console.error('Invalid department or subject path.');
+                    }
+                  } else {
+                    console.error('User ID number is missing or invalid.');
+                  }
+                }}
+                className="mt-4 w-full"
+                variant="outline"
+              >
+                View Grades
+              </Button>
             </CardContent>
           </Card>
         ))}

@@ -109,7 +109,7 @@ export async function POST(req) {
 
     // Construct the query dynamically
     const columns = [
-      "subjectid",
+      "subject_id",
       "ORT1_Title", "ORT2_Title", "ORT3_Title", "ORT4_Title", "ORT5_Title", "ORT6_Title", "ORT7_Title", "ORT8_Title",
       "WA1_Title", "WA2_Title", "WA3_Title", "WA4_Title", "WA5_Title", "WA6_Title",
       "long_test_Title", "midterm_Title",

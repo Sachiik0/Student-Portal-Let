@@ -45,7 +45,7 @@ export async function POST(req) { // Change GET to POST
         long_test_criteria1_title, long_test_criteria2_title, long_test_criteria3_title, long_test_criteria4_title, long_test_criteria5_title,
         midterm_criteria1_title, midterm_criteria2_title, midterm_criteria3_title, midterm_criteria4_title, midterm_criteria5_title
       FROM college_activities_criteria_titles 
-      WHERE subject_id = ?`;
+      WHERE subjectid = ?`;
 
     console.log("Executing SQL Query with subjectId:", subjectId);
 

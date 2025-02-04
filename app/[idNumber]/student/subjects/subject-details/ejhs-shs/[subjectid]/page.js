@@ -129,88 +129,30 @@ export default function SubjectPage() {
     const totalScore = criteria.reduce((sum, c) => sum + (c.score || 0), 0);
     const totalHighestScore = criteria.reduce((sum, c) => sum + (c.highestScore || 0), 0);
 
-    return (
-      <div key={prefix}>
-        <Typography variant="h6">{title}</Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Criteria</TableCell>
-                <TableCell>Highest Possible</TableCell>
-                <TableCell>Your Score</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {criteria.map((c, index) => (
-                <TableRow key={index}>
-                  <TableCell>{c.title}</TableCell>
-                  <TableCell>{c.highestScore}</TableCell>
-                  <TableCell>{c.score}</TableCell>
-                </TableRow>
-              ))}
-              <TableRow>
-                <TableCell>
-                  <strong>Total</strong>
-                </TableCell>
-                <TableCell>{totalHighestScore}</TableCell>
-                <TableCell>{totalScore}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </div>
-    );
+    return { title, criteria, totalScore, totalHighestScore };
   };
 
-  const calculateTotalScores = () => {
-    const components = [
-      { name: 'Written Works', prefixes: ['WW1','WW2','WW3','WW4','WW5','WW6','WW7'] },
-      { name: 'Practical Test', prefixes: ['PT1', 'PT2', 'PT3'] },
-      { name: 'Quarterly Assesment', prefixes: ['QA1', 'QA2'] },
-    ];
-
-    return components.map((component) => {
-      const totalScore = component.prefixes.reduce((total, prefix) => {
-        for (let i = 1; i <= 5; i++) {
-          const activityTitle = data?.[`${prefix}_Title`];
-          const criteriaTitle = data?.[`${prefix}_criteria${i}_title`];
-          if (activityTitle && criteriaTitle) {
-            total += grades?.[`${prefix}_criteria${i}_score`] || 0;
-          }
-        }
-        return total;
-      }, 0);
-
-      return { ...component, totalScore };
-    });
+  const activityGroups = {
+    'Written Works': ['WW1', 'WW2', 'WW3', 'WW4', 'WW5', 'WW6', 'WW7'],
+    'Practical Test': ['PT1', 'PT2', 'PT3'],
+    'Quarterly Assessment': ['QA1', 'QA2'],
   };
 
-  const calculateTotalHighestScores = () => {
-    const components = [
-      { name: 'Written Works', prefixes: ['WW1','WW2','WW3','WW4','WW5','WW6','WW7'] },
-      { name: 'Practical Test', prefixes: ['PT1', 'PT2', 'PT3'] },
-      { name: 'Quarterly Assesment', prefixes: ['QA1', 'QA2'] },
-    ];
+  const totalScores = Object.entries(activityGroups).map(([groupName, prefixes]) => {
+    const totalScore = prefixes.reduce((total, prefix) => {
+      const activityData = renderActivityData(prefix);
+      return total + (activityData ? activityData.totalScore : 0);
+    }, 0);
+    return { name: groupName, totalScore };
+  });
 
-    return components.map((component) => {
-      const totalHighestScore = component.prefixes.reduce((total, prefix) => {
-        for (let i = 1; i <= 5; i++) {
-          const activityTitle = data?.[`${prefix}_Title`];
-          const criteriaTitle = data?.[`${prefix}_criteria${i}_title`];
-          if (activityTitle && criteriaTitle) {
-            total += highestScores?.[0]?.[`${prefix}_criteria${i}_highest_score`] || 0;
-          }
-        }
-        return total;
-      }, 0);
-
-      return { ...component, totalHighestScore };
-    });
-  };
-
-  const totalScores = calculateTotalScores();
-  const totalHighestScores = calculateTotalHighestScores();
+  const totalHighestScores = Object.entries(activityGroups).map(([groupName, prefixes]) => {
+    const totalHighestScore = prefixes.reduce((total, prefix) => {
+      const activityData = renderActivityData(prefix);
+      return total + (activityData ? activityData.totalHighestScore : 0);
+    }, 0);
+    return { name: groupName, totalHighestScore };
+  });
 
   if (isLoading) {
     return (
@@ -258,18 +200,59 @@ export default function SubjectPage() {
                 Subject Data for Subject ID: {subjectid} and Student ID: {idNumber}
               </Typography>
 
-              {/* Render Activity Data for each prefix */}
-              {[
-                'WW1','WW2','WW3','WW4','WW5','WW6','WW7','PT1', 'PT2', 'PT3','QA1', 'QA2'
-              ].map((prefix) => renderActivityData(prefix))}
+              {/* Render Activity Data for each group */}
+              {Object.entries(activityGroups).map(([groupName, prefixes]) => {
+                const activities = prefixes.map(renderActivityData).filter(Boolean);
+                if (activities.length === 0) return null;
+
+                return (
+                  <Card key={groupName} sx={{ marginBottom: 2 }}>
+                    <CardContent>
+                      <Typography variant="h5">{groupName}</Typography>
+                      {activities.map(({ title, criteria, totalScore, totalHighestScore }, index) => (
+                        <div key={index}>
+                          <Typography variant="h6">{title}</Typography>
+                          <TableContainer component={Paper}>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Criteria</TableCell>
+                                  <TableCell>Highest Possible</TableCell>
+                                  <TableCell>Your Score</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {criteria.map((c, index) => (
+                                  <TableRow key={index}>
+                                    <TableCell>{c.title}</TableCell>
+                                    <TableCell>{c.highestScore}</TableCell>
+                                    <TableCell>{c.score}</TableCell>
+                                  </TableRow>
+                                ))}
+                                <TableRow>
+                                  <TableCell>
+                                    <strong>Total</strong>
+                                  </TableCell>
+                                  <TableCell>{totalHighestScore}</TableCell>
+                                  <TableCell>{totalScore}</TableCell>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* Grand Total Card */}
-        <div className="w-full lg:w-1/3">
+        <div className="w-full lg:w-1/3 sticky top-0">
           <Card
-            sx={{ backgroundColor: '#f5f5f5', boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)' }}
+            sx={{ position: 'sticky', top: 20, zIndex: 1000, backgroundColor: '#f5f5f5', boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)' }}
           >
             <CardContent>
               <Typography variant="h6" align="center" gutterBottom>
@@ -288,8 +271,8 @@ export default function SubjectPage() {
                     {totalScores.map((component, index) => (
                       <TableRow key={index}>
                         <TableCell>{component.name}</TableCell>
-                        <TableCell>{component.totalScore}</TableCell> {/* From calculateTotalScores */}
-                        <TableCell>{totalHighestScores[index]?.totalHighestScore}</TableCell> {/* From calculateTotalHighestScores */}
+                        <TableCell>{component.totalScore}</TableCell>
+                        <TableCell>{totalHighestScores[index]?.totalHighestScore}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

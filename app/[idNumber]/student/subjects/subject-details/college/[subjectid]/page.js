@@ -27,7 +27,7 @@ export default function SubjectPage() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
+  useEffect(() => { 
     if (subjectid && idNumber) {
       setIsLoading(true);
       fetchSubjectData(subjectid);
@@ -129,38 +129,14 @@ export default function SubjectPage() {
     const totalScore = criteria.reduce((sum, c) => sum + (c.score || 0), 0);
     const totalHighestScore = criteria.reduce((sum, c) => sum + (c.highestScore || 0), 0);
 
-    return (
-      <div key={prefix}>
-        <Typography variant="h6">{title}</Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Criteria</TableCell>
-                <TableCell>Highest Possible</TableCell>
-                <TableCell>Your Score</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {criteria.map((c, index) => (
-                <TableRow key={index}>
-                  <TableCell>{c.title}</TableCell>
-                  <TableCell>{c.highestScore}</TableCell>
-                  <TableCell>{c.score}</TableCell>
-                </TableRow>
-              ))}
-              <TableRow>
-                <TableCell>
-                  <strong>Total</strong>
-                </TableCell>
-                <TableCell>{totalHighestScore}</TableCell>
-                <TableCell>{totalScore}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </div>
-    );
+    return { title, criteria, totalScore, totalHighestScore };
+  };
+
+  const activityGroups = {
+    'OBE Related Tasks': ['ORT1', 'ORT2', 'ORT3', 'ORT4', 'ORT5', 'ORT6', 'ORT7', 'ORT8'],
+    'Written Assessment': ['WA1', 'WA2', 'WA3', 'WA4', 'WA5', 'WA6'],
+    'Long Test': ['long_test'],
+    'Midterms/Finals': ['midterm'],
   };
 
   const calculateTotalScores = () => {
@@ -173,14 +149,8 @@ export default function SubjectPage() {
 
     return components.map((component) => {
       const totalScore = component.prefixes.reduce((total, prefix) => {
-        for (let i = 1; i <= 5; i++) {
-          const activityTitle = data?.[`${prefix}_Title`];
-          const criteriaTitle = data?.[`${prefix}_criteria${i}_title`];
-          if (activityTitle && criteriaTitle) {
-            total += grades?.[`${prefix}_criteria${i}_score`] || 0;
-          }
-        }
-        return total;
+        const activityData = renderActivityData(prefix);
+        return total + (activityData ? activityData.totalScore : 0);
       }, 0);
 
       return { ...component, totalScore };
@@ -197,14 +167,8 @@ export default function SubjectPage() {
 
     return components.map((component) => {
       const totalHighestScore = component.prefixes.reduce((total, prefix) => {
-        for (let i = 1; i <= 5; i++) {
-          const activityTitle = data?.[`${prefix}_Title`];
-          const criteriaTitle = data?.[`${prefix}_criteria${i}_title`];
-          if (activityTitle && criteriaTitle) {
-            total += highestScores?.[0]?.[`${prefix}_criteria${i}_highest_score`] || 0;
-          }
-        }
-        return total;
+        const activityData = renderActivityData(prefix);
+        return total + (activityData ? activityData.totalHighestScore : 0);
       }, 0);
 
       return { ...component, totalHighestScore };
@@ -260,60 +224,84 @@ export default function SubjectPage() {
                 Subject Data for Subject ID: {subjectid} and Student ID: {idNumber}
               </Typography>
 
-              {/* Render Activity Data for each prefix */}
-              {[
-                'ORT1',
-                'ORT2',
-                'ORT3',
-                'ORT4',
-                'ORT5',
-                'ORT6',
-                'ORT7',
-                'ORT8',
-                'WA1',
-                'WA2',
-                'WA3',
-                'WA4',
-                'WA5',
-                'WA6',
-                'long_test',
-                'midterm',
-              ].map((prefix) => renderActivityData(prefix))}
+              {/* Render Activity Data for each group */}
+              {Object.entries(activityGroups).map(([groupName, prefixes]) => {
+                const activities = prefixes.map(renderActivityData).filter(Boolean);
+                if (activities.length === 0) return null;
+
+                return (
+                  <Card key={groupName} sx={{ marginBottom: 2 }}>
+                    <CardContent>
+                      <Typography variant="h5">{groupName}</Typography>
+                      {activities.map(({ title, criteria, totalScore, totalHighestScore }, index) => (
+                        <div key={index}>
+                          <Typography variant="h6">{title}</Typography>
+                          <TableContainer component={Paper}>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Criteria</TableCell>
+                                  <TableCell>Highest Possible</TableCell>
+                                  <TableCell>Your Score</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {criteria.map((c, index) => (
+                                  <TableRow key={index}>
+                                    <TableCell>{c.title}</TableCell>
+                                    <TableCell>{c.highestScore}</TableCell>
+                                    <TableCell>{c.score}</TableCell>
+                                  </TableRow>
+                                ))}
+                                <TableRow>
+                                  <TableCell>
+                                    <strong>Total</strong>
+                                  </TableCell>
+                                  <TableCell>{totalHighestScore}</TableCell>
+                                  <TableCell>{totalScore}</TableCell>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* Grand Total Card */}
-        <div className="w-full lg:w-1/3">
-          <Card
-            sx={{ backgroundColor: '#f5f5f5', boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)' }}
-          >
-            <CardContent>
-              <Typography variant="h6" align="center" gutterBottom>
-                Grand Total
-              </Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Components</TableCell>
-                      <TableCell>Score</TableCell>
-                      <TableCell>Highest Possible Score</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {totalScores.map((component, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{component.name}</TableCell>
-                        <TableCell>{component.totalScore}</TableCell> {/* From calculateTotalScores */}
-                        <TableCell>{totalHighestScores[index]?.totalHighestScore}</TableCell> {/* From calculateTotalHighestScores */}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+        <div className="w-full lg:w-1/3 sticky top-0">
+        <Card sx={{ position: 'sticky', top: 20, zIndex: 1000 }}>
+  <CardContent>
+    <Typography variant="h6" align="center" gutterBottom>
+      Grand Total
+    </Typography>
+    <TableContainer component={Paper}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Components</TableCell>
+            <TableCell>Score</TableCell>
+            <TableCell>Highest Possible Score</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {totalScores.map((component, index) => (
+            <TableRow key={index}>
+              <TableCell>{component.name}</TableCell>
+              <TableCell>{component.totalScore}</TableCell>
+              <TableCell>{totalHighestScores[index]?.totalHighestScore}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  </CardContent>
+</Card>
         </div>
       </div>
     </div>

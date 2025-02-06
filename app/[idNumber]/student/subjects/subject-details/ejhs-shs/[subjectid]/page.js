@@ -185,7 +185,10 @@ export default function SubjectPage() {
 
       <div className="max-w-6xl mx-auto py-8 px-6 flex flex-wrap lg:flex-nowrap gap-6">
         <div className="flex-grow">
-          <h1 className="text-2xl font-bold mb-4">📘 Subject Data</h1>
+          <h1 className="text-2xl font-bold mb-4">📘 Subject Grades </h1>
+          <p className="text-gray-700 mb-4">
+            Below is the detailed information for the selected subject.
+          </p>
           {error && (
             <Alert severity="error" className="mb-6 p-4 rounded-lg shadow-lg">
               <AlertTitle>Error</AlertTitle>
@@ -195,10 +198,6 @@ export default function SubjectPage() {
 
           {data && subjectid && idNumber && (
             <div>
-              <Typography variant="h6" gutterBottom align="center">
-                Subject Data for Subject ID: {subjectid} and Student ID: {idNumber}
-              </Typography>
-
               {Object.entries(activityGroups).map(([groupName, prefixes]) => {
                 const activities = prefixes.map(renderActivityData).filter(Boolean);
                 if (activities.length === 0) return null;

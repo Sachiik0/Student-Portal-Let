@@ -2,7 +2,7 @@ Student-Portal-Let
 
 This is a Next.js project bootstrapped with create-next-app.
 
-\=========================================
+\========================================
 🚀 Getting Started
 ==================
 
@@ -11,9 +11,17 @@ Follow the steps below to set up and run the project on your local machine.
 Prerequisites:
 
 - Node.js
+    ```
+    https://nodejs.org/en/download
+    ```
 - XAMPP MySQL
+    ```
+    https://www.apachefriends.org/download.html
+    ```
 - Visual Studio Code
-
+    ```
+    https://code.visualstudio.com/download
+    ```
 ---
 
 ## Setup Instructions

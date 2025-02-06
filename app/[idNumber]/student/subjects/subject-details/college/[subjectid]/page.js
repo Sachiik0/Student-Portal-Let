@@ -59,6 +59,49 @@ export default function SubjectPage() {
     }
   };
 
+   // Fetch subjects for the logged-in student
+   const fetchSubjects = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user')); // Retrieve user info from localStorage
+      if (!user || !user.idNumber) {
+        throw new Error('Unauthorized: Missing user info.');
+      }
+
+      // Fetch the student's subjects from the correct API endpoint
+      const res = await fetch(`/api/student/subjects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idNumber: user.idNumber,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to fetch subjects.');
+      }
+
+      const data = await res.json();
+
+      if (data.length === 0) {
+        setError('No subjects found for this student.');
+        return;
+      }
+
+      fetchSubjects(data);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'An error occurred while fetching subjects.');
+    }
+  };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
+
+
   const fetchSubjectData = async (subjectId) => {
     try {
       const response = await fetch('/api/student/grades/college/fetch-criteria', {
@@ -195,8 +238,16 @@ export default function SubjectPage() {
     <div className="min-h-screen bg-white text-black">
       {/* Navbar */}
       <div className="bg-gray-900 text-white py-3 px-6 flex justify-between items-center">
-        <span className="text-lg font-bold">📚 Subject Details</span>
-        <button onClick={() => router.push('/')} className="text-white underline">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push(`/${idNumber}/student/subjects`)}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700"
+          >
+            🔙 Back to Dashboard
+          </button>
+        </div>
+        <button onClick={() => router.push('/')} className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">
+          
           Log off
         </button>
       </div>
@@ -276,32 +327,32 @@ export default function SubjectPage() {
         {/* Grand Total Card */}
         <div className="w-full lg:w-1/3 sticky top-0">
         <Card sx={{ position: 'sticky', top: 20, zIndex: 1000 }}>
-  <CardContent>
-    <Typography variant="h6" align="center" gutterBottom>
-      Grand Total
-    </Typography>
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Components</TableCell>
-            <TableCell>Score</TableCell>
-            <TableCell>Highest Possible Score</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {totalScores.map((component, index) => (
-            <TableRow key={index}>
-              <TableCell>{component.name}</TableCell>
-              <TableCell>{component.totalScore}</TableCell>
-              <TableCell>{totalHighestScores[index]?.totalHighestScore}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  </CardContent>
-</Card>
+          <CardContent>
+            <Typography variant="h6" align="center" gutterBottom>
+              Grand Total
+            </Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Components</TableCell>
+                    <TableCell>Score</TableCell>
+                    <TableCell>Highest Possible Score</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {totalScores.map((component, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{component.name}</TableCell>
+                      <TableCell>{component.totalScore}</TableCell>
+                      <TableCell>{totalHighestScores[index]?.totalHighestScore}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
         </div>
       </div>
     </div>

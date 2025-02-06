@@ -115,7 +115,7 @@ export default function SubjectPage() {
     if (!data || !highestScores || !grades) return null;
 
     const title = data[`${prefix}_Title`];
-    if (!title) return null; // Skip if no activity title exists
+    if (!title) return null;
 
     const criteria = Array.from({ length: 5 }, (_, i) => {
       const criterion = {
@@ -123,7 +123,7 @@ export default function SubjectPage() {
         highestScore: highestScores[0]?.[`${prefix}_criteria${i + 1}_highest_score`] || 0,
         score: grades[`${prefix}_criteria${i + 1}_score`] || 0,
       };
-      return criterion.title ? criterion : null; // Only include criteria if the title exists
+      return criterion.title ? criterion : null;
     }).filter(Boolean);
 
     const totalScore = criteria.reduce((sum, c) => sum + (c.score || 0), 0);
@@ -138,22 +138,6 @@ export default function SubjectPage() {
     'Quarterly Assessment': ['QA1', 'QA2'],
   };
 
-  const totalScores = Object.entries(activityGroups).map(([groupName, prefixes]) => {
-    const totalScore = prefixes.reduce((total, prefix) => {
-      const activityData = renderActivityData(prefix);
-      return total + (activityData ? activityData.totalScore : 0);
-    }, 0);
-    return { name: groupName, totalScore };
-  });
-
-  const totalHighestScores = Object.entries(activityGroups).map(([groupName, prefixes]) => {
-    const totalHighestScore = prefixes.reduce((total, prefix) => {
-      const activityData = renderActivityData(prefix);
-      return total + (activityData ? activityData.totalHighestScore : 0);
-    }, 0);
-    return { name: groupName, totalHighestScore };
-  });
-
   if (isLoading) {
     return (
       <Card sx={{ maxWidth: 600, margin: 'auto', padding: 2 }}>
@@ -167,26 +151,41 @@ export default function SubjectPage() {
     );
   }
 
+  // Grand Total Calculation
+  const totalScores = Object.entries(activityGroups).map(([groupName, prefixes]) => {
+    let totalScore = 0;
+    let totalHighestScore = 0;
+
+    prefixes.forEach((prefix) => {
+      const activity = renderActivityData(prefix);
+      if (activity) {
+        totalScore += activity.totalScore;
+        totalHighestScore += activity.totalHighestScore;
+      }
+    });
+
+    return { groupName, totalScore, totalHighestScore };
+  });
+
   return (
     <div className="min-h-screen bg-white text-black">
-      {/* Navbar */}
       <div className="bg-gray-900 text-white py-3 px-6 flex justify-between items-center">
-        <span className="text-lg font-bold">📚 Subject Details</span>
-        <button onClick={() => router.push('/')} className="text-white underline">
+        <button
+          onClick={() => router.push(`/${idNumber}/student/subjects`)}
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700"
+        >
+          🔙 Back to Dashboard
+        </button>
+        <button onClick={() => router.push('/')}
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700"
+        >
           Log off
         </button>
       </div>
 
-      {/* Content Area */}
       <div className="max-w-6xl mx-auto py-8 px-6 flex flex-wrap lg:flex-nowrap gap-6">
-        {/* Main Table Area */}
         <div className="flex-grow">
           <h1 className="text-2xl font-bold mb-4">📘 Subject Data</h1>
-          <p className="text-gray-700 mb-4">
-            Below is the detailed information for the selected subject.
-          </p>
-
-          {/* Error Alert */}
           {error && (
             <Alert severity="error" className="mb-6 p-4 rounded-lg shadow-lg">
               <AlertTitle>Error</AlertTitle>
@@ -200,7 +199,6 @@ export default function SubjectPage() {
                 Subject Data for Subject ID: {subjectid} and Student ID: {idNumber}
               </Typography>
 
-              {/* Render Activity Data for each group */}
               {Object.entries(activityGroups).map(([groupName, prefixes]) => {
                 const activities = prefixes.map(renderActivityData).filter(Boolean);
                 if (activities.length === 0) return null;
@@ -215,24 +213,23 @@ export default function SubjectPage() {
                           <TableContainer component={Paper}>
                             <Table>
                               <TableHead>
-                                <TableRow>
-                                  <TableCell>Criteria</TableCell>
-                                  <TableCell>Highest Possible</TableCell>
-                                  <TableCell>Your Score</TableCell>
+                                <TableRow sx={{ position: 'sticky', bottom: 0, backgroundColor: 'white', fontWeight: 'bold' }}>
+                                  <TableCell><strong>Total</strong></TableCell>
+                                  <TableCell><strong>{totalHighestScore}</strong></TableCell>
+                                  <TableCell><strong>{totalScore}</strong></TableCell>
                                 </TableRow>
                               </TableHead>
                               <TableBody>
-                                {criteria.map((c, index) => (
-                                  <TableRow key={index}>
-                                    <TableCell>{c.title}</TableCell>
-                                    <TableCell>{c.highestScore}</TableCell>
-                                    <TableCell>{c.score}</TableCell>
-                                  </TableRow>
-                                ))}
+                                {criteria &&
+                                  criteria.map((c, index) => (
+                                    <TableRow key={index}>
+                                      <TableCell>{c.title}</TableCell>
+                                      <TableCell>{c.highestScore}</TableCell>
+                                      <TableCell>{c.score}</TableCell>
+                                    </TableRow>
+                                  ))}
                                 <TableRow>
-                                  <TableCell>
-                                    <strong>Total</strong>
-                                  </TableCell>
+                                  <TableCell><strong>Total</strong></TableCell>
                                   <TableCell>{totalHighestScore}</TableCell>
                                   <TableCell>{totalScore}</TableCell>
                                 </TableRow>
@@ -251,28 +248,26 @@ export default function SubjectPage() {
 
         {/* Grand Total Card */}
         <div className="w-full lg:w-1/3 sticky top-0">
-          <Card
-            sx={{ position: 'sticky', top: 20, zIndex: 1000, backgroundColor: '#f5f5f5', boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)' }}
-          >
-            <CardContent>
-              <Typography variant="h6" align="center" gutterBottom>
-                Grand Total
-              </Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Components</TableCell>
-                      <TableCell>Score</TableCell>
-                      <TableCell>Highest Possible Score</TableCell>
-                    </TableRow>
-                  </TableHead>
+        <Card sx={{ position: 'sticky', top: 20, zIndex: 1000 }}>
+          <CardContent>
+            <Typography variant="h6" align="center" gutterBottom>
+              Grand Total
+            </Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Components</TableCell>
+                    <TableCell>Score</TableCell>
+                    <TableCell>Highest Possible Score</TableCell>
+                  </TableRow>
+                </TableHead>
                   <TableBody>
                     {totalScores.map((component, index) => (
                       <TableRow key={index}>
-                        <TableCell>{component.name}</TableCell>
+                        <TableCell>{component.groupName}</TableCell>
                         <TableCell>{component.totalScore}</TableCell>
-                        <TableCell>{totalHighestScores[index]?.totalHighestScore}</TableCell>
+                        <TableCell>{component.totalHighestScore}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

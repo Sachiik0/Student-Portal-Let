@@ -1,12 +1,45 @@
 'use client'; // Mark this as a Client Component
 
 import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import withAuth from '@/components/withAuth'; // Import the withAuth HOC
 
 function StudentPage() {
   const params = useParams();
   const { idNumber } = params;
   const router = useRouter();
+
+  // State to store the student's name
+  const [studentName, setStudentName] = useState('');
+  
+  // Fetch student details on component mount
+  useEffect(() => {
+    const fetchStudentName = async () => {
+      try {
+        const response = await fetch(`/api/student/student_info`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ idNumber }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          setStudentName(data.name); // Set student name if found
+        } else {
+          console.error('Failed to fetch student details:', data.error);
+        }
+      } catch (error) {
+        console.error('Error fetching student data:', error);
+      }
+    };
+    
+    if (idNumber) {
+      fetchStudentName();
+    }
+  }, [idNumber]);
 
   // Logout function to clear session and redirect to login
   const handleLogout = () => {
@@ -27,7 +60,7 @@ function StudentPage() {
       <div className="bg-gray-900 text-white py-3 px-6 flex justify-between items-center">
         <span className="text-lg font-bold">🏠 HOME | Colegio de San Juan de Letran</span>
         <div>
-          <span className="mr-4">Hello, Student {idNumber}!</span>
+          <span className="mr-4">Hello, {studentName || `Student ${idNumber}`}!</span>
           <button onClick={handleLogout} className="text-white underline">Log off</button>
         </div>
       </div>
@@ -43,7 +76,7 @@ function StudentPage() {
           <li>View your enrolled subjects and grades.</li>
         </ul>
 
-        <p className="mt-4 font-medium">Currently Logged Email: student{idNumber}@letran.edu.ph</p>
+        <p className="mt-4 font-medium">Currently Logged Email: {studentName ? `${studentName}@letran.edu.ph` : `student${idNumber}@letran.edu.ph`}</p>
 
         {/* Quick Links */}
         <div className="mt-6 space-y-2">

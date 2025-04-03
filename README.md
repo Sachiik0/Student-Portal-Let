@@ -1,4 +1,4 @@
-# Student-Portal-Let
+Student-Portal-Let
 
 This is a Next.js project bootstrapped with create-next-app.
 
@@ -8,7 +8,7 @@ This is a Next.js project bootstrapped with create-next-app.
 
 Follow the steps below to set up and run the project on your local machine.
 
-### Prerequisites:
+Prerequisites:
 
 - Node.js
     ```
@@ -31,28 +31,30 @@ Follow the steps below to set up and run the project on your local machine.
 
 2️⃣ Import the `Letran.sql` database file into MySQL.
 
-3️⃣ Install required packages:
+3️⃣ Install necessary packages:
    ```bash
-   npm install next mysql2 dotenv node-schedule
+   npm install mysql2 node-schedule
    ```
 
-4️⃣ Initialize the project:
+4️⃣ Create a `.env` file in the root directory and add the following content:
+   ```env
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASS=
+   DB_NAME=Letran
+   DB_PORT=3308
+   NEXT_PUBLIC_HOME_URL=http://localhost:3000/
+   ```
+
+5️⃣ Initialize the project:
    ```bash
    npm init
    ```
 
-5️⃣ Start the development server:
+6️⃣ Start the development server:
    ```bash
    npm run dev
    ```
 
 Once started, open [http://localhost:3000](http://localhost:3000) in your browser to view the app.
-
-### Additional Packages:
-
-- **dotenv**: To load environment variables from a `.env` file.
-- **mysql2**: To connect to MySQL databases.
-- **node-schedule**: To schedule and run recurring tasks.
-
-Happy coding! 🚀
 
